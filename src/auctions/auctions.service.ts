@@ -289,9 +289,6 @@ export class AuctionsService {
       where: { id: auctionId },
       relations: ['biddings', 'item'],
     });
-    console.log('From the validate auction: ', auction);
-    console.log('Auction item: ', auction?.item);
-    console.log('Auction biddings: ', auction?.biddings);
 
     if (!auction) {
       throw new NotFoundException(`Auction with ID ${auctionId} not found`);
