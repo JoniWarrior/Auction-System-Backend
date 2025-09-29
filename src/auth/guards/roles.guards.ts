@@ -28,47 +28,35 @@ export class RolesGuard implements CanActivate {
         const requiredRoles = this.reflector.getAllAndOverride<string[]>(ROLES_KEY, 
             [context.getHandler(), context.getClass()]);
 
-        if (!requiredRoles || requiredRoles.length === 0) {
-            return true;
-        }
-
+        if (!requiredRoles || requiredRoles.length === 0) return true;
+    
         const req = context.switchToHttp().getRequest();
         const authHeader = req.headers.authorization;
 
-        if (!authHeader) {
-            throw new UnauthorizedException("Authorization header missing");
-        }
+        if (!authHeader) throw new UnauthorizedException("Authorization header missing");
+
         const token = authHeader.split(" ")[1];
-
-        if (!token) {
-            throw new UnauthorizedException("Invalid token")
-        }
-
+        if (!token) throw new UnauthorizedException("Invalid token")
+    
         try {
-
-            const decoded = this.jwtService.verify(token, {
-                secret : process.env.JWT_SECRET
-            });
+            const payload = this.jwtService.verify(token);
             
             const user = await this.usersRepository.findOne({
-                where : {id : decoded.id},
+                where : {id : payload.id},
                 select : ["id", "email", "role", "name"]
             });   
 
-            if (!user) {
-                throw new UnauthorizedException("User not found")
-            }
+            if (!user) throw new UnauthorizedException("User not found")
 
             req.user = {
-            id: user.id,
-            email: user.email,
-            role: user.role,
-            name : user.name
-            };
-
-            if (!requiredRoles.includes(user.role)) {
-                throw new ForbiddenException("Access denied: insufficient role")
+                id : user.id,
+                email : user.email,
+                name : user.name,
+                role : user.role
             }
+
+            if (!requiredRoles.includes(user.role)) throw new ForbiddenException("Access denied: insufficient role")
+
             return true;
 
         } catch (err) {

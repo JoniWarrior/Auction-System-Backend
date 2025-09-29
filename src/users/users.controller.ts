@@ -22,6 +22,11 @@ export class UsersController {
   findAll() {
     return this.usersService.findAll();
   }
+
+  @Get()
+  findUsers(@Query() query : FindUsersQueryDto) {
+    return this.usersService.findWithFilters(query);
+  }
   
   @Get(':id')
   findOne(@Param('id') id: string) {
@@ -49,9 +54,4 @@ export class UsersController {
     return this.usersService.findBidderBids(id);
   }
 
-  @Get()
-  findUsers(@Query() query : FindUsersQueryDto) {
-    return this.usersService.findWithFilters(query);
-
-  }
 }

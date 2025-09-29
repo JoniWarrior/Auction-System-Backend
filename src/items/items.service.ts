@@ -6,6 +6,7 @@ import { Item } from './entities/item.entity';
 import { User } from "./../users/entities/user.entity";
 import { Repository } from 'typeorm';
 import { v2 as cloudinary } from 'cloudinary';
+import { Role } from './../users/entities/user.entity';
 
 @Injectable()
 export class ItemsService {
@@ -16,36 +17,24 @@ export class ItemsService {
     private usersRepository: Repository<User>
   ) {}
 
+  private async validateSeller(sellerId : string) : Promise<User> {
+  const seller = await this.usersRepository.findOneBy({ id: sellerId });
+  if (!seller) throw new NotFoundException(`No user found with userId ${sellerId}`);
+  if (seller.role !== Role.SELLER) throw new BadRequestException(`User with Id ${sellerId} is not a seller`);    
+    return seller;
+  }
+
   async create(createItemDto: CreateItemDto, file: Express.Multer.File): Promise<Item> {
     try {
-      const seller = await this.usersRepository.findOneBy({ id: createItemDto.sellerId });
-
-      if (!seller) {
-        throw new NotFoundException(`No user found with userId ${createItemDto.sellerId}`);
-      }
-
-      if (seller.role !== "seller") {
-        throw new BadRequestException(`User with Id ${createItemDto.sellerId} is not a seller`);
-      }
-
-      if (!file) {
-        throw new BadRequestException("Image is required!");
-      }
-
-      console.log('File details:', {
-        originalname: file.originalname,
-        path: file.path,
-        buffer: file.buffer ? 'exists' : 'undefined',
-        size: file.size
-      });
-
-      // Upload to Cloudinary with error handling
+      const seller = await this.validateSeller(createItemDto.sellerId);
+      if (!file) throw new BadRequestException("Image is required!");
+      
       const uploadResult = await new Promise<{ secure_url: string }>((resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(
         { folder: 'auction_items', resource_type: 'image' },
         (error, result) => {
           if (error) return reject(error);
-          resolve(result as any);
+          resolve(result as {secure_url : string});
         },
       );
       uploadStream.end(file.buffer);
@@ -57,7 +46,6 @@ export class ItemsService {
         imageURL: uploadResult.secure_url,
         seller  
       });
-
       const savedItem = await this.itemsRepository.save(item);
 
       return this.itemsRepository.findOneOrFail({
@@ -72,10 +60,8 @@ export class ItemsService {
   }
 
   async findAll() : Promise<Item[]> {
-    const items = await this.itemsRepository.find();
-    if (items.length === 0) {
-      throw new NotFoundException("No items have been created in the DB yet ")
-    }
+    const items = await this.itemsRepository.find({relations : ["seller"]});
+    if (items.length === 0) throw new NotFoundException("No items have been created in the DB yet ")
     return items;
   }
 
@@ -84,31 +70,25 @@ export class ItemsService {
       where : {id},
       relations : ["seller"]
      });
-    if (!item) {
-      throw new NotFoundException(`There is no item with ID ${id} in the DB`)
-    }
+    if (!item)  throw new NotFoundException(`There is no item with Id ${id} in the DB`)
     return item;
   }
 
   async update(id : string, updateItemDto : UpdateItemDto) : Promise<Item> {
     const originalItem = await this.itemsRepository.findOneBy({id});
-    if (!originalItem) {
-      throw new NotFoundException(`There is not item with ID ${id} in the DB`);
-    }
+    if (!originalItem) throw new NotFoundException(`There is not item with Id ${id} in the DB`);
     const updatedItem = this.itemsRepository.merge(originalItem, updateItemDto);
     return this.itemsRepository.save(updatedItem);
   }
 
   async remove(id : string) : Promise<Item> {
     const item = await this.itemsRepository.findOneBy({ id });
-    if (!item) {
-      throw new NotFoundException(`Item with ID ${id} not found in the DB `)
-    }
+    if (!item)  throw new NotFoundException(`Item with ID ${id} not found in the DB `)
     await this.itemsRepository.remove(item);
     return item;
   }
 
-  async findMyEmptyItems(userId : string) : Promise<Item[]> {
+  async findMyItemsWithoutAuction(userId : string) : Promise<Item[]> {
     const myEmptyItems = await this.itemsRepository
     .createQueryBuilder("item")
     .leftJoinAndSelect("item.seller", "seller")
@@ -117,9 +97,7 @@ export class ItemsService {
     .andWhere("auction IS NULL")
     .getMany();
 
-    if (myEmptyItems.length === 0) {
-      return [];
-    }
+    if (myEmptyItems.length === 0)  return [];
     return myEmptyItems;
   }
 }

@@ -8,23 +8,14 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import * as multer from "multer";
 
 @Controller('items')
-@UseGuards(JwtAuthGuard) 
+@UseGuards(JwtAuthGuard, RolesGuard) 
 @Roles("seller")
-@UseGuards(RolesGuard) 
 export class ItemsController {
   constructor(private readonly itemsService: ItemsService) {}
 
   @Post()
   @UseInterceptors(FileInterceptor('image', { storage: multer.memoryStorage() }))
-  create(
-    @Body() createItemDto: CreateItemDto,
-    @UploadedFile() file: Express.Multer.File,
-  ) {
-    console.log('File in controller:', {
-      originalname: file?.originalname,
-      buffer: file?.buffer ? 'exists' : 'missing',
-      size: file?.size,
-    });
+  create( @Body() createItemDto: CreateItemDto, @UploadedFile() file: Express.Multer.File) {
     return this.itemsService.create(createItemDto, file);
   }
 
@@ -36,10 +27,8 @@ export class ItemsController {
   @Get("/my-empty-items")
   findMyEmptyItems(@Req() req : Request) {
     const id = req["user"].id;
-    console.log("Id: ", id);
     const user = req["user"];
-    console.log("User from Req Body: ", user);
-    return this.itemsService.findMyEmptyItems(user.id);
+    return this.itemsService.findMyItemsWithoutAuction(user.id);
   }
 
   @Get(':id')
@@ -57,4 +46,3 @@ export class ItemsController {
     return this.itemsService.remove(id);
   }
 }
-

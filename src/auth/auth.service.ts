@@ -31,14 +31,13 @@ export class AuthService {
         }       
 
         const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
-        
 
         const user = await this.usersService.create({
             ...createUserDto,
             password : hashedPassword
         });
 
-        const payload = {id : user.id, email : user.email, role : user.role};
+        const payload = {id : user.id, email : user.email, role : user.role, name : user.name};
         const token = this.jwtService.sign(payload);
 
         return {
@@ -54,7 +53,7 @@ async login(email: string, password: string) {
   const match = await bcrypt.compare(password, existingUser.password);
   if (!match) throw new UnauthorizedException("Invalid credentials");
 
-  const payload = { id: existingUser.id, email: existingUser.email, role: existingUser.role };
+  const payload = { id: existingUser.id, email: existingUser.email, role: existingUser.role, name : existingUser.name};
   const token = this.jwtService.sign(payload);
 
   return {

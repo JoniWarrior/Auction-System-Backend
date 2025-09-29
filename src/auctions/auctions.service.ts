@@ -1,15 +1,11 @@
-import {
-  Injectable,
-  NotFoundException,
-  Logger,
-  BadRequestException,
-} from '@nestjs/common';
+import {Injectable, NotFoundException, Logger, BadRequestException} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Not, Repository, LessThan, MoreThan } from 'typeorm';
 import { CreateAuctionDto } from './dto/create-auction.dto';
 import { UpdateAuctionDto } from './dto/update-auction.dto';
 import { Auction, STATUS } from './entities/auction.entity';
 import { Item } from './../items/entities/item.entity';
+import { User } from './../users/entities/user.entity';
 import { Bidding } from './../biddings/entities/bidding.entity';
 import { Cron, CronExpression } from '@nestjs/schedule';
 
@@ -28,19 +24,26 @@ export class AuctionsService {
     private biddingsRepository: Repository<Bidding>,
   ) {}
 
+  private async getAuctionOrFail(id: string, relations : string[] = ["biddings", "biddings.bidder", "item"]) : Promise<Auction> {
+    const auction = await this.auctionsRepository.findOne({where : {id}, relations});
+    if (!auction) throw new NotFoundException(`Auction with Id: ${id} not found`);
+    return auction;
+  }
+  
+  private async getHighestBid(auction : Auction) {
+    return auction.biddings.reduce((max, bidding) => 
+    (bidding.amount > max.amount ? bidding : max), auction.biddings[0])};
+
   async create(createAuctionDto: CreateAuctionDto): Promise<Auction> {
     const item = await this.itemsRepository.findOneBy({
       id: createAuctionDto.itemId,
     });
-    if (!item) {
-      throw new NotFoundException(
-        `Item with Id ${createAuctionDto.itemId} does not exist`,
-      );
-    }
+    if (!item) throw new NotFoundException(`Item with Id ${createAuctionDto.itemId} not found`,);
+    
     const auction = this.auctionsRepository.create({
       starting_price: createAuctionDto.starting_price,
       end_time: createAuctionDto.end_time,
-      current_price: createAuctionDto.starting_price, // set initiallty to the starting price
+      current_price: createAuctionDto.starting_price,
       item,
     });
 
@@ -55,11 +58,7 @@ export class AuctionsService {
     const auctions = await this.auctionsRepository.find({
       relations: ['item', 'item.seller', 'biddings', "winningBid"],
     });
-    if (auctions.length === 0) {
-      throw new NotFoundException(
-        'No auctions have been created in the DB yet',
-      );
-    }
+    if (auctions.length === 0) throw new NotFoundException('No auctions found')
     return auctions;
   }
 
@@ -87,85 +86,66 @@ export class AuctionsService {
     .where("biddings.bidder_id = :bidderId", {bidderId})
     .getMany();
 
-    if (auctions.length === 0) {
-      throw new NotFoundException("You have made no bidding in any of the featured auctions yet!")
-    }
+    if (auctions.length === 0) throw new NotFoundException("No bidding made at any auction")
     return auctions;
   }
 
   async findOne(id: string): Promise<Auction> {
-    const auction = await this.auctionsRepository.findOne({
-      where: { id },
-      relations: [
-        'item',
-        'item.seller',
-        'biddings',
-        'biddings.bidder',
-        'winningBid',
-      ]
-    });
-    if (!auction) {
-      throw new NotFoundException(`There is no auction with Id ${id}`);
-    }
+    const auction = await this.getAuctionOrFail(id, ["item", "item.seller", "biddings", "biddings.bidder", "winningBid"]);
     return auction;
+    // const auction = await this.auctionsRepository.findOne({
+    //   where: { id },
+    //   relations: [
+    //     'item',
+    //     'item.seller',
+    //     'biddings',
+    //     'biddings.bidder',
+    //     'winningBid',
+    //   ]
+    // });
+    // if (!auction) throw new NotFoundException(`There is no auction with Id ${id}`);
+    // return auction;
   }
 
   async update(id: string, updateAuctionDTO: UpdateAuctionDto): Promise<Auction> {
     const originalAuction = await this.auctionsRepository.findOneBy({ id });
-    if (!originalAuction) {
-      throw new NotFoundException(
-        `There is no auction created yet with Id ${id}`,
-      );
-    }
-
-    const updatedAuction = this.auctionsRepository.merge(
-      originalAuction,
-      updateAuctionDTO,
-    );
+    if (!originalAuction)throw new NotFoundException(`No auction with Id ${id}`,);
+  
+    const updatedAuction = this.auctionsRepository.merge(originalAuction,updateAuctionDTO);
     return this.auctionsRepository.save(updatedAuction);
   }
 
   async remove(id: string): Promise<Auction> {
     const auction = await this.auctionsRepository.findOneBy({ id });
-    if (!auction) {
-      throw new NotFoundException(
-        `There is not auction registered with Id ${id} yet`,
-      );
-    }
+    if (!auction) throw new NotFoundException(`Auction with Id ${id} not found`);
+    
     await this.auctionsRepository.remove(auction);
     return auction;
   }
 
   async findAuctionsByStatus(status: string): Promise<Auction[]> {
-    if (!Object.values(STATUS).includes(status as STATUS)) {
-      throw new Error(`Invalid status ${status}`);
-    }
+    if (!Object.values(STATUS).includes(status as STATUS)) throw new BadRequestException(`Invalid status ${status}`);
+    
     const auctions = await this.auctionsRepository.find({
       where: { status: status as STATUS },
     });
 
-    if (auctions.length === 0) {
-      throw new Error (`There is not any auction of the status ${status} currently`);
-    }
+    if (!auctions.length) throw new NotFoundException(`No auction with status ${status} currently`);
     return auctions;
   }
 
   async findBiddingsOfAuction(id: string): Promise<Bidding[]> {
     const auction = await this.auctionsRepository.findOneBy({ id });
-    if (!auction) {
-      throw new NotFoundException(`No auction with Id: ${id} yet`);
-    }
-
+    if (!auction) throw new NotFoundException(`No auction found with Id: ${id}`);
+    
     const biddings = await this.biddingsRepository.find({
       where: { auction: { id: auction.id } },
       relations: ['bidder'],
       order: { amount: 'DESC' },
     });
 
-    if (biddings.length === 0) {
-      throw new NotFoundException(`No bids yet for the auction with Id ${id}`);
-    }
-
+    if (!biddings.length) throw new NotFoundException(`No bidings found for the auction ${id}`);
+  
     return biddings;
   }
 
@@ -183,27 +163,15 @@ export class AuctionsService {
       relations: ['biddings', 'biddings.bidder'],
     });
 
-    this.logger.log(
-      `Found : ${expiredAuctions.length} expired auctions to close! `,
-    );
-
-    for (const auction of expiredAuctions) {
-      await this.closeAuction(auction.id);
-    }
+    this.logger.log(`Found : ${expiredAuctions.length} expired auctions to close! `);
+    await Promise.all(expiredAuctions.map(auction => this.closeAuction(auction.id)));
   }
 
   async closeAuction(auctionId: string): Promise<Auction> {
     this.logger.log(`Closing auction : ${auctionId} ...`);
 
-    const auction = await this.auctionsRepository.findOne({
-      where: { id: auctionId },
-      relations: ['biddings', 'biddings.bidder', 'item'],
-    });
-
-    if (!auction) {
-      throw new NotFoundException(`Auction with Id: ${auction} not found`);
-    }
-
+    const auction = await this.getAuctionOrFail(auctionId);
+ 
     if (auction.status === STATUS.FINISHED) {
       this.logger.log(`Auction with Id: ${auction.id} has already finished`);
       return auction;
@@ -213,15 +181,9 @@ export class AuctionsService {
     let winningBidAmount = auction.starting_price;
 
     if (auction.biddings && auction.biddings.length > 0) {
-      winningBid = auction.biddings.reduce(
-        (max, bid) => (bid.amount > max.amount ? bid : max),
-        auction.biddings[0],
-      );
-
-      winningBidAmount = winningBid?.amount;
-      this.logger.log(
-        `Auction ${auctionId} closed. Winner: ${winningBid.bidder.id} with bid: ${winningBidAmount}`,
-      );
+      winningBid = await this.getHighestBid(auction);
+      winningBidAmount = winningBid.amount;
+      this.logger.log(`Auction ${auctionId} closed. Winner: ${winningBid!.bidder.id} with bid: ${winningBidAmount}`);
     } else {
       this.logger.log(`Auction ${auctionId} closed with no bids`);
     }
@@ -229,54 +191,32 @@ export class AuctionsService {
     auction.status = STATUS.FINISHED;
     auction.current_price = winningBidAmount;
 
-    if (winningBid) {
-      auction.winningBid = winningBid;
-    }
-
+    if (winningBid) auction.winningBid = winningBid;
     return await this.auctionsRepository.save(auction);
   }
 
   async getAuctionWinner(auctionId: string): Promise<{
-    winner: any;
+    winner: User | null;
     winning_bid_amount: number;
     auction: Auction;
   }> {
-    const auction = await this.auctionsRepository.findOne({
-      where: { id: auctionId },
-      relations: ['biddings', 'biddings.bidder', 'item', 'winningBid', "winningBid.bidder"],
-    });
-
-    if (!auction) {
-      throw new NotFoundException(`Auction with ID ${auctionId} not found`);
-    }
-
-    if (auction.status !== STATUS.FINISHED) {
-      throw new BadRequestException(
-        `Auction with ID ${auctionId} is not finished yet`,
-      );
-    }
-
-    if (auction.winningBid) {
-      return {
+    const auction = await this.getAuctionOrFail(auctionId, ['biddings', 'biddings.bidder', 'item', 'winningBid', "winningBid.bidder"]);
+    if (auction.status !== STATUS.FINISHED) throw new BadRequestException(`Auction with ID ${auctionId} not finished yet`);
+    
+    if (auction.winningBid) return {
         winner: auction.winningBid.bidder,
         winning_bid_amount: auction.winningBid.amount,
         auction,
       };
-    }
-
-    if (!auction.biddings || auction.biddings.length === 0) {
-      return {
+    
+    if (!auction.biddings || auction.biddings.length === 0) return {
         winner: null,
         winning_bid_amount: auction.starting_price,
         auction,
       };
-    }
-
-    const highestBid = auction.biddings.reduce(
-      (max, bid) => (bid.amount > max.amount ? bid : max),
-      auction.biddings[0],
-    );
-
+  
+    const highestBid = await this.getHighestBid(auction);
+    
     return {
       winner: highestBid.bidder,
       winning_bid_amount: highestBid.amount,
@@ -285,25 +225,14 @@ export class AuctionsService {
   }
 
   async validateAuctionForBidding(auctionId: string): Promise<Auction> {
-    const auction = await this.auctionsRepository.findOne({
-      where: { id: auctionId },
-      relations: ['biddings', 'item'],
-    });
-
-    if (!auction) {
-      throw new NotFoundException(`Auction with ID ${auctionId} not found`);
-    }
-
-    if (auction.status === STATUS.FINISHED) {
-      throw new BadRequestException('Auction has already finished');
-    }
+    const auction = await this.getAuctionOrFail(auctionId,['biddings', 'item']);
+    if (auction.status === STATUS.FINISHED) throw new BadRequestException('Auction has already finished');
 
     const now = new Date();
     if (now > auction.end_time) {
       await this.closeAuction(auctionId);
       throw new BadRequestException('Auction has ended');
     }
-
     return auction;
   }
 
@@ -316,11 +245,6 @@ export class AuctionsService {
       },
       relations: ['item', 'biddings'],
     });
-
-    if (!auctions || auctions.length === 0) {
-      console.log('No active auctions');
-    }
-
     return auctions;
   }
 

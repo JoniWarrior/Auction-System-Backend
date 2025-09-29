@@ -1,5 +1,6 @@
-import { IsOptional, IsEmail, IsString, IsIn } from 'class-validator';
-import { Transform } from 'class-transformer';
+import { IsOptional, IsEmail, IsString, IsEnum, IsInt, IsIn } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+import { Role } from '../entities/user.entity';
 
 export class FindUsersQueryDto {
   @IsOptional()
@@ -13,7 +14,16 @@ export class FindUsersQueryDto {
   name?: string;
 
   @IsOptional()
-  @IsString()
-  @IsIn(['bidder', 'seller', 'admin'])
-  role?: string;
+  @IsEnum(Role)
+  role?: Role;
+
+  @IsOptional()
+  @IsInt()
+  @Type(() => Number)
+  limit ?: number
+
+  @IsOptional()
+  @IsInt()
+  @Type(() => Number)
+  page ?: number;
 }

@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, ILike } from 'typeorm';
+import { Repository, ILike, FindOptionsWhere } from 'typeorm';
 import { User, Role} from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -9,19 +9,26 @@ import { Item } from './../items/entities/item.entity';
 import { Bidding } from './../biddings/entities/bidding.entity';
 import { FindUsersQueryDto } from './dto/find-users-query.dto';
 
+
 @Injectable()
 export class UsersService {
   constructor(@InjectRepository(User)
-              private usersRepository : Repository<User>,
+  private usersRepository : Repository<User>,
+  
+  @InjectRepository(Item)
+  private itemsRepository : Repository<Item>,
+  
+  @InjectRepository(Bidding)
+  private biddingsRepository : Repository<Bidding>
+) {}
 
-              @InjectRepository(Item)
-              private itemsRepository : Repository<Item>,
+private async getUserOrFail(id : string) : Promise<User> {
+  const user = await this.usersRepository.findOne({where : {id}});
+  if (!user) throw new NotFoundException(`User with Id: ${id} not found!`)
+  return user;
+}
 
-              @InjectRepository(Bidding)
-              private biddingsRepository : Repository<Bidding>
-            ) {}
-
-  async create(createUserDto : CreateUserDto) : Promise<User> {
+async create(createUserDto : CreateUserDto) : Promise<User> {
     const user = this.usersRepository.create({
     ...createUserDto,
     role: createUserDto.role || Role.BIDDER,
@@ -31,9 +38,6 @@ export class UsersService {
 
   async findAll() : Promise<User[]> {
     const users = await this.usersRepository.find();
-    if (users.length === 0) {
-      return []
-    }
     return users;
   };
 
@@ -43,59 +47,42 @@ export class UsersService {
       relations : ["items"]
     });
     if (!user) {
-      throw new NotFoundException(`User with ID: ${id} not found in the DB! `);
+      throw new NotFoundException(`User with Id: ${id} not found in the DB! `);
     }
     return user;
   }
 
   async update(id : string, updateUserDto : UpdateUserDto) : Promise<User> {
-    const originalUser = await this.usersRepository.findOneBy({ id });
-    if (!originalUser) {
-      throw new NotFoundException(`User with ID ${id} not found in the DB! `)
-    }
-
-    const updatedUser = this.usersRepository.merge(originalUser, updateUserDto);
+    const user = await this.getUserOrFail(id);
+    const updatedUser = this.usersRepository.merge(user, updateUserDto);
     return this.usersRepository.save(updatedUser);
   }
 
   async remove(id : string) : Promise<User> {
-    const user = await this.usersRepository.findOneBy({ id });
-    if (!user) {
-      throw new NotFoundException(`User with ID ${id} does not exist `);
-    }
+    const user = await this.getUserOrFail(id);
     await this.usersRepository.remove(user);
     return user;
   }
 
   async findSellerItems(id : string) : Promise<Item[]> {
-    const user = await this.usersRepository.findOneBy({id});
-    if (!user) {
-      throw new NotFoundException(`User with Id: ${id} does not exist in the DB`)
-    }
-    if (user.role !== "seller") {
-      throw new BadRequestException("The user is not registered as a seller!")
-    }
+    const user = await this.getUserOrFail(id);
+    if (user.role !== Role.SELLER)
+      throw new BadRequestException(`The user with Id: ${id} is not registered as a seller!`)
 
     const items = await this.itemsRepository.find({
         select : ["id", "title", "description"],  
         where : {seller : {id : user.id}},
     });
 
-    if (items.length === 0) {
-      throw new NotFoundException(`This seller has not yet registered any item for sale`)
-    }
+    if (!items.length) 
+      throw new NotFoundException(`The seller with ${id} has no items listed`)
     return items;
   }
 
   async findBidderBids(id : string) : Promise<Bidding[]> {
-    const bidder = await this.usersRepository.findOneBy({id});
-    if (!bidder) {
-      throw new NotFoundException(`User with Id : ${id} not registered yet`)
-    }
+    const user = await this.getUserOrFail(id);
 
-    if (bidder.role !== "bidder") {
-      throw new BadRequestException(`User with Id : ${id} is not registered as a bidder`)
-    }
+    if (user.role !== Role.BIDDER) throw new BadRequestException(`User with Id : ${id} is not a bidder`)
 
     const biddings = await this.biddingsRepository
     .createQueryBuilder("bidding")
@@ -113,39 +100,39 @@ export class UsersService {
       "item.title",
       "item.description"
     ])
-    .where("bidding.bidder_id = :bidderId", { bidderId: bidder.id })
+    .where("bidding.bidder_id = :bidderId", { bidderId: user.id })
     .getMany();
 
-    if (biddings.length === 0) {
-      throw new NotFoundException(`The user with Id ${id} has not made any bidding yet`)
-    }
+    if (!biddings.length)
+      throw new NotFoundException(`The user with Id ${id} has not place any bidding`)
+  
     return biddings;
   }
 
   async findByEmail (email : string) : Promise<User> {
     const user = await this.usersRepository.findOne({where : {email}});
     if (!user) {
-      throw new NotFoundException(`User with email : ${email} does not exist!`)
+      throw new NotFoundException(`User with email : ${email} not found!`)
     };
     return user;
   }
 
-  
-
   async findWithFilters(filters : FindUsersQueryDto) : Promise<User[]> {
-    const where : any = {};
+    const where : FindOptionsWhere<User> = {};
 
-    if (filters.email) {
-      where.email = filters.email;
-    }
+    if (filters.email) where.email = filters.email;
+    if (filters.name) where.name = ILike(`%${filters.name}%`);
+    if (filters.role) where.role = filters.role;
+ 
+    const limit = filters.limit ?? 20;
+    const page = filters.page ?? 1;
+    const skip = (page - 1) * limit;
 
-    if (filters.name) {
-    where.name = ILike(`%${filters.name}%`);
-  }
-  
-    if (filters.role) {
-    where.role = filters.role;
-    }
-    return this.usersRepository.find({where});
+    return this.usersRepository.find({
+      where,
+      take : limit,
+      skip,
+      order : {name : "ASC"}
+    });
   }
 }

@@ -11,7 +11,6 @@ export class BiddingsGateway implements OnGatewayConnection, OnGatewayDisconnect
     @WebSocketServer()
     server: Server
 
-
     handleConnection(client: Socket) {
         console.log(`Client connected : ${client.id}`)
     }
@@ -43,7 +42,7 @@ export class BiddingsGateway implements OnGatewayConnection, OnGatewayDisconnect
     ) {
         client.to(`auction_${data.auctionId}`).emit("biddingIndicator", {
             userName : data.userName,
-            isBidding : true
+            isBidding : true    
         });
     }
 

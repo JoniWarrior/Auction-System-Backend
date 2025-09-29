@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtAuthGuard } from './auth.guards';
-import { RolesGuard, Roles } from './roles.guards';
+import { RolesGuard } from './roles.guards';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from './../../users/entities/user.entity';
 
