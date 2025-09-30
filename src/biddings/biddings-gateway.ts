@@ -11,12 +11,27 @@ export class BiddingsGateway implements OnGatewayConnection, OnGatewayDisconnect
     @WebSocketServer()
     server: Server
 
+
+    private userSockets = new Map<string, string>();
+
     handleConnection(client: Socket) {
-        console.log(`Client connected : ${client.id}`)
+        const userId = client.handshake.query.userId as string;
+        if (userId) {
+            this.userSockets.set(userId, client.id);
+            console.log(`Client connected   : ${client.id}`);
+            console.log("Map after connecting: ", this.userSockets);
+        }
     }
 
     handleDisconnect(client: Socket) {
-        console.log(`Client disconneted : ${client.id}`)
+        const userId = client.handshake.query.userId as string;
+        for (const [userId, socketId] of this.userSockets.entries()) {
+            if (socketId === client.id) {
+                this.userSockets.delete(userId);
+                console.log(`Client disconneted : ${client.id}`)
+                break
+            }
+        }
     }
 
     @SubscribeMessage("joinAuction")
@@ -35,27 +50,36 @@ export class BiddingsGateway implements OnGatewayConnection, OnGatewayDisconnect
         this.server.to(`auction_${auctionId}`).emit("newBid", bidding);
     }
 
+    broadcastOutBid(auctionId : string, bidding : any, bidderId : string) {
+        const bidderSocketId = this.userSockets.get(bidderId);
+        console.log("Map after out Bid: ", this.userSockets);
+        if (bidderSocketId) {
+            this.server.to(`auction_${auctionId}`).except(bidderSocketId).emit("outBid", bidding);
+        } else {
+            this.server.to(`auction_${auctionId}`).emit("outbid", bidding);
+        }
+    }
+
     @SubscribeMessage("startBidding")
     handleStartBidding(
-        @MessageBody() data : {auctionId : string, userName : String},
-        @ConnectedSocket() client : Socket
+        @MessageBody() data: { auctionId: string, userName: String },
+        @ConnectedSocket() client: Socket
     ) {
         client.to(`auction_${data.auctionId}`).emit("biddingIndicator", {
-            userName : data.userName,
-            isBidding : true    
+            userName: data.userName,
+            isBidding: true
         });
     }
 
 
     @SubscribeMessage("stopBidding")
     handleStopBidding(
-        @MessageBody() data : {auctionId : string, userName : string},
-        @ConnectedSocket() client : Socket
-    )
-     {
+        @MessageBody() data: { auctionId: string, userName: string },
+        @ConnectedSocket() client: Socket
+    ) {
         client.to(`auction_${data.auctionId}`).emit("biddingIndicator", {
-            userName : data.userName,
-            isBidding : false
+            userName: data.userName,
+            isBidding: false
         })
-     }
+    }
 }

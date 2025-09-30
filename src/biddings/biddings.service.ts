@@ -1,21 +1,25 @@
-import { Injectable, NotFoundException, BadRequestException, Inject } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Inject, forwardRef } from '@nestjs/common';
 import { CreateBiddingDto } from './dto/create-bidding.dto';
 import { UpdateBiddingDto } from './dto/update-bidding.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Bidding } from './entities/bidding.entity';
 import { Repository } from 'typeorm';
 import { Auction, STATUS } from './../auctions/entities/auction.entity';
-import { Role, User } from './../users/entities/user.entity';
+import { Role } from './../users/entities/user.entity';
 import { AuctionsService } from './../auctions/auctions.service';
 import { BiddingsGateway } from './biddings-gateway';
-import { UsersService } from 'src/users/users.service';
+import { UsersService } from './../users/users.service';
 
 @Injectable()
 export class BiddingsService {
   constructor(
     @InjectRepository(Bidding)
     private biddingsRepository: Repository<Bidding>,
+
+    @Inject(forwardRef(() => UsersService))
     private usersService : UsersService,
+    
+    @Inject(forwardRef(() => AuctionsService))
     private auctionsService: AuctionsService,
 
     @Inject()
@@ -58,6 +62,7 @@ export class BiddingsService {
     });
 
     this.biddingsGateway.broadcastNewBid(auction.id, fullBid);
+    this.biddingsGateway.broadcastOutBid(auction.id, fullBid, bidderId);
     return fullBid;
   }
 

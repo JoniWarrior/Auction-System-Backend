@@ -8,10 +8,12 @@ import { User } from './../users/entities/user.entity';
 import { JwtAuthModule } from "./../auth/guards/jwt-auth.module";
 import { AuctionsModule } from './../auctions/auctions.module';
 import { BiddingsGateway } from './biddings-gateway';
+import { UsersModule } from './../users/users.module';
 
 @Module({
   imports : [TypeOrmModule.forFeature([Bidding, Auction, User]), 
   forwardRef(() => AuctionsModule),
+  forwardRef(() => UsersModule),
   JwtAuthModule],
   controllers: [BiddingsController],
   providers: [BiddingsService, BiddingsGateway],

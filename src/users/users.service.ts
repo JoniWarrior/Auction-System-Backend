@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, forwardRef, Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, ILike, FindOptionsWhere } from 'typeorm';
 import { User, Role } from './entities/user.entity';
@@ -8,8 +8,8 @@ import { NotFoundException } from '@nestjs/common';
 import { Item } from './../items/entities/item.entity';
 import { Bidding } from './../biddings/entities/bidding.entity';
 import { FindUsersQueryDto } from './dto/find-users-query.dto';
-import { ItemsService } from 'src/items/items.service';
-import { BiddingsService } from 'src/biddings/biddings.service';
+import { ItemsService } from './../items/items.service';
+import { BiddingsService } from './../biddings/biddings.service';
 
 
 @Injectable()
@@ -17,6 +17,8 @@ export class UsersService {
   constructor(@InjectRepository(User)
   private usersRepository: Repository<User>,
     private itemsService: ItemsService,
+
+    @Inject(forwardRef(() => BiddingsService))
     private biddingsService: BiddingsService
   ) { }
 
@@ -42,6 +44,12 @@ export class UsersService {
     if (!user) {
       throw new NotFoundException(`User with Id: ${id} not found in the DB! `);
     }
+    return user;
+  }
+
+  async findByEmail(email : string) : Promise<User> {
+    const user = await this.usersRepository.findOne({where : {email}});
+    if( !user ) throw new NotFoundException(`User with email ${email} not found!`);
     return user;
   }
 

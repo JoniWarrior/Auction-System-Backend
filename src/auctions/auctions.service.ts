@@ -1,8 +1,7 @@
-import { Injectable, NotFoundException, Logger, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger, BadRequestException, Inject, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Not, Repository, LessThan, FindOptionsWhere } from 'typeorm';
 import { CreateAuctionDto } from './dto/create-auction.dto';
-import { UpdateAuctionDto } from './dto/update-auction.dto';
 import { Auction, STATUS } from './entities/auction.entity';
 import { Bidding } from './../biddings/entities/bidding.entity';
 import { Cron, CronExpression } from '@nestjs/schedule';
@@ -18,6 +17,8 @@ export class AuctionsService {
     @InjectRepository(Auction)
     private auctionsRepository: Repository<Auction>,
     private itemsService: ItemsService,
+
+    @Inject(forwardRef(() => BiddingsService))
     private biddingsService: BiddingsService
   ) { }
 
