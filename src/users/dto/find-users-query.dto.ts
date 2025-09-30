@@ -20,10 +20,10 @@ export class FindUsersQueryDto {
   @IsOptional()
   @IsInt()
   @Type(() => Number)
-  limit ?: number
+  limit?: number
 
   @IsOptional()
   @IsInt()
   @Type(() => Number)
-  page ?: number;
+  page?: number;
 }

@@ -7,10 +7,12 @@ import { Item } from './../items/entities/item.entity';
 import { Bidding } from './../biddings/entities/bidding.entity';
 import { JwtAuthModule } from './../auth/guards/jwt-auth.module';
 import { BiddingsModule } from './../biddings/biddings.module';
+import { ItemsModule } from 'src/items/items.module';
 
 @Module({
   imports : [TypeOrmModule.forFeature([Auction, Item, Bidding]),
   JwtAuthModule,
+  ItemsModule,
   forwardRef(() => BiddingsModule)
 ],
   controllers: [AuctionsController],

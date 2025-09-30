@@ -41,11 +41,4 @@ export class BiddingsController {
     return this.biddingsService.remove(id);
   }
 
-  @Get("by-bidder/:bidderId")
-  @Roles("bidder","admin","seller")
-  @UseGuards(RolesGuard)
-  findByBidder(@Param("bidderId") bidderId : string) {
-    return this.biddingsService.findByUser(bidderId);
-  }
-
 }

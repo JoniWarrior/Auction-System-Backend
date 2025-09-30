@@ -8,65 +8,53 @@ import { Auction, STATUS } from './../auctions/entities/auction.entity';
 import { Role, User } from './../users/entities/user.entity';
 import { AuctionsService } from './../auctions/auctions.service';
 import { BiddingsGateway } from './biddings-gateway';
+import { UsersService } from 'src/users/users.service';
 
 @Injectable()
 export class BiddingsService {
   constructor(
     @InjectRepository(Bidding)
     private biddingsRepository: Repository<Bidding>,
-
-    @InjectRepository(Auction)
-    private auctionsRepository: Repository<Auction>,
-
-    @InjectRepository(User)
-    private usersRepository: Repository<User>,
-
+    private usersService : UsersService,
     private auctionsService: AuctionsService,
 
     @Inject()
     private readonly biddingsGateway: BiddingsGateway,
-  ) {}
+  ) { }
 
-  private async getUserById(id : string) : Promise<User> {
-    const user = await this.usersRepository.findOneBy({ id });
-    if (!user) throw new NotFoundException(`User with ID ${id} not found`);
-    return user;
-  }
-  private getHighestBid(auction : Auction) : number {
+  private getHighestBid(auction: Auction): number {
     return auction.biddings.length ? Math.max(...auction.biddings.map(b => b.amount)) : auction.starting_price;
   }
 
+  private async saveAndLoadBidding(bidding : Bidding) : Promise<Bidding> {
+    const saved = await this.biddingsRepository.save(bidding);
+    return this.biddingsRepository.findOneOrFail({
+      where : { id : saved.id},
+      relations : ["auction", "bidder", "auction.item"]
+    });
+  }
+
   async create(createBiddingDto: CreateBiddingDto): Promise<Bidding> {
-    const {auctionId, bidderId, amount} = createBiddingDto;
+    const { auctionId, bidderId, amount } = createBiddingDto;
 
     const auction = await this.auctionsService.validateAuctionForBidding(auctionId);
-    const user = await this.getUserById(bidderId);
+    const user = await this.usersService.findOne(bidderId);
     if (user.role !== Role.BIDDER) throw new BadRequestException(`User with Id ${bidderId} is not a bidder`);
-
     const currentHighestBid = this.getHighestBid(auction);
 
     if (amount <= currentHighestBid) throw new BadRequestException(`Bid amount must be higher than $${currentHighestBid}`);
 
-    const totalBidCount = await this.biddingsRepository.count({
-      where: { auction: { id: auction.id } }
-    });
-
+    const isFirstBid = (auction.biddings?.length ?? 0) === 0;
     const bidding = this.biddingsRepository.create({
       amount: amount,
       auction: { id: auction.id },
       bidder: { id: user.id }
     });
-
-    const savedBidding = await this.biddingsRepository.save(bidding);
-
-    await this.auctionsRepository.update(auction.id, {
-      current_price : amount,
-      ...(totalBidCount === 0 && {status : STATUS.ACTIVE})
-    });
-
-    const fullBid = await this.biddingsRepository.findOneOrFail({
-      where: { id: savedBidding.id },
-      relations: ['auction', 'bidder', 'auction.item']
+    
+    const fullBid = await this.saveAndLoadBidding(bidding);
+    await this.auctionsService.update(auction.id, {
+      current_price: amount,
+      ...(isFirstBid && { status: STATUS.ACTIVE })
     });
 
     this.biddingsGateway.broadcastNewBid(auction.id, fullBid);
@@ -75,7 +63,8 @@ export class BiddingsService {
 
   async findAll(): Promise<Bidding[]> {
     const biddings = await this.biddingsRepository.find({
-      relations: ['auction', 'bidder']
+      relations: ['auction', 'bidder'],
+      order: { amount: "DESC" }
     });
     if (!biddings.length) throw new NotFoundException('No biddings found');
     return biddings;
@@ -91,19 +80,13 @@ export class BiddingsService {
   }
 
   async update(id: string, updateBiddingDto: UpdateBiddingDto): Promise<Bidding> {
-    const bidding = await this.biddingsRepository.findOneBy({ id });
-
-    if (!bidding) throw new NotFoundException(`Bidding with ID ${id} not found`);
-
+    const bidding = await this.findOne(id);
     const updatedBidding = this.biddingsRepository.merge(bidding, updateBiddingDto);
     return this.biddingsRepository.save(updatedBidding);
   }
 
   async remove(id: string): Promise<Bidding> {
-    const bidding = await this.biddingsRepository.findOneBy({ id });
-
-    if (!bidding) throw new NotFoundException(`Bidding with ID ${id} not found`);
-
+    const bidding = await this.findOne(id);
     await this.biddingsRepository.remove(bidding);
     return bidding;
   }
@@ -115,10 +98,26 @@ export class BiddingsService {
       order: { amount: 'DESC' }
     });
   }
-  async findByUser(userId: string): Promise<Bidding[]> {
-    return this.biddingsRepository.find({
-      where: { bidder: { id: userId } },
-      order: { amount: "DESC" }
-    })
-  };
+  
+  async findBidsByBider(userId: string): Promise<Bidding[]> {
+    return this.biddingsRepository
+      .createQueryBuilder("bidding")
+      .leftJoinAndSelect("bidding.auction", "auction")
+      .leftJoinAndSelect("auction.item", "item")
+      .select([
+        "bidding.id",
+        "bidding.amount",
+        "bidding.created_at",
+        "auction.id",
+        "auction.starting_price",
+        "auction.current_price",
+        "auction.end_time",
+        "auction.status",
+        "item.title",
+        "item.description",
+      ])
+      .where("bidding.bidder_id = :bidderId", { bidderId: userId })
+      .getMany();
+  }
+
 }

@@ -4,6 +4,7 @@ import { CreateAuctionDto } from './dto/create-auction.dto';
 import { UpdateAuctionDto } from './dto/update-auction.dto';
 import { JwtAuthGuard } from './../auth/guards/auth.guards';
 import { Roles, RolesGuard } from './../auth/guards/roles.guards';
+import { FindAuctionsFilterDTO } from './dto/auctions-filter.dto';
 
 @Controller('auctions')
 export class AuctionsController {
@@ -35,24 +36,8 @@ export class AuctionsController {
   }
 
   @Get()
-  findAll() {
-    return this.auctionsService.findAll();
-  }
-
-
-  @Get("finished")
-  async getFinishedAuctions() {
-    return await this.auctionsService.getFinishedAuctions();
-  }
-
-  @Get("active")
-  async getActiveAuctions() {
-    return await this.auctionsService.getActiveAuctions();
-  }
-
-  @Get("filter/status")
-  findAuctionByStatus(@Query("status") status : string) {
-    return this.auctionsService.findAuctionsByStatus(status);
+  async findAll(@Query() filters : FindAuctionsFilterDTO) {
+    return this.auctionsService.findAll(filters);
   }
 
   @Get(':id')
@@ -76,10 +61,10 @@ export class AuctionsController {
     return this.auctionsService.findBiddingsOfAuction(auctionId);
   }
 
-  @Get(":id/winner")
-  async getWinningBid(@Param("id") id : string) {
-    return await this.auctionsService.getAuctionWinner(id);
-  }
+  // @Get(":id/winner")
+  // async getWinningBid(@Param("id") id : string) {
+  //   return await this.auctionsService.getAuctionWinner(id);
+  // }
 
   @Post(":id/close")
   async closeAuction(@Param("id") id : string) {

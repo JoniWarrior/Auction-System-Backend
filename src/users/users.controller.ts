@@ -19,13 +19,8 @@ export class UsersController {
   }
 
   @Get()
-  findAll() {
-    return this.usersService.findAll();
-  }
-
-  @Get()
   findUsers(@Query() query : FindUsersQueryDto) {
-    return this.usersService.findWithFilters(query);
+    return this.usersService.findAll(query);
   }
   
   @Get(':id')
