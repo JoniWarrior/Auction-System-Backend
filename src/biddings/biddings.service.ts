@@ -62,7 +62,12 @@ export class BiddingsService {
     });
 
     this.biddingsGateway.broadcastNewBid(auction.id, fullBid);
+    
+    // const pastBidders = auction.biddings.map(b => b.bidder.id).filter(id => id !== bidderId);
+    // const uniquePasBidders = [... new Set(pastBidders)];
+    // this.biddingsGateway.broadcastOutBid(auction.id, fullBid, uniquePasBidders);
     this.biddingsGateway.broadcastOutBid(auction.id, fullBid, bidderId);
+
     return fullBid;
   }
 

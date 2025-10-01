@@ -9,11 +9,13 @@ import { JwtAuthModule } from "./../auth/guards/jwt-auth.module";
 import { AuctionsModule } from './../auctions/auctions.module';
 import { BiddingsGateway } from './biddings-gateway';
 import { UsersModule } from './../users/users.module';
+import { NotificationsModule } from './../notifications/notifications.module';
 
 @Module({
   imports : [TypeOrmModule.forFeature([Bidding, Auction, User]), 
   forwardRef(() => AuctionsModule),
   forwardRef(() => UsersModule),
+  NotificationsModule,
   JwtAuthModule],
   controllers: [BiddingsController],
   providers: [BiddingsService, BiddingsGateway],

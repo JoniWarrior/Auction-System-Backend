@@ -1,5 +1,7 @@
 import { ConnectedSocket, MessageBody, OnGatewayConnection, OnGatewayDisconnect, SubscribeMessage, WebSocketGateway, WebSocketServer } from "@nestjs/websockets";
 import { Server, Socket } from "socket.io";
+import { NotificationsService } from "./../notifications/notifications.service";
+import { AuctionsService } from "./../auctions/auctions.service";
 
 @WebSocketGateway({
     cors: {
@@ -7,6 +9,9 @@ import { Server, Socket } from "socket.io";
     }
 })
 export class BiddingsGateway implements OnGatewayConnection, OnGatewayDisconnect {
+    constructor(private readonly notificationsService: NotificationsService,
+        private readonly auctionsService: AuctionsService
+    ) { }
 
     @WebSocketServer()
     server: Server
@@ -50,7 +55,27 @@ export class BiddingsGateway implements OnGatewayConnection, OnGatewayDisconnect
         this.server.to(`auction_${auctionId}`).emit("newBid", bidding);
     }
 
-    broadcastOutBid(auctionId : string, bidding : any, bidderId : string) {
+    // async broadcastOutBid(auctionId: string, bidding: any, outbidderIds: string[]) {
+    //     const auction = await this.auctionsService.findOne(auctionId);
+
+    //     if (!auction) return;
+
+    //     const message = `You have been outbid in auction: ${auction.item.title} with bid: ${bidding.amount}`;
+
+    //     for (const userId of outbidderIds) {
+    //         const socketId = this.userSockets.get(userId);
+
+    //         // save notification in DB
+    //         await this.notificationsService.create(userId, auctionId, message);
+
+    //         // emit to connected user
+    //         if (socketId) {
+    //             this.server.to(socketId).emit("outBid", { message, bidding });
+    //         }
+    //     }
+    // }
+
+    broadcastOutBid(auctionId: string, bidding: any, bidderId: string) {
         const bidderSocketId = this.userSockets.get(bidderId);
         console.log("Map after out Bid: ", this.userSockets);
         if (bidderSocketId) {
