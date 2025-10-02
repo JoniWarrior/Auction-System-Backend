@@ -13,7 +13,7 @@ import { ItemsModule } from 'src/items/items.module';
   imports: [TypeOrmModule.forFeature([User, Item, Bidding]),
     JwtAuthModule,
     forwardRef(() => BiddingsModule),
-    ItemsModule],
+    forwardRef(() => ItemsModule)],
   controllers: [UsersController],
   providers: [UsersService],
   exports: [UsersService]

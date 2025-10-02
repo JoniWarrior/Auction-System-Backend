@@ -1,4 +1,9 @@
-import { BadRequestException, forwardRef, Inject, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  forwardRef,
+  Inject,
+  Injectable,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, ILike, FindOptionsWhere } from 'typeorm';
 import { User, Role } from './entities/user.entity';
@@ -11,20 +16,21 @@ import { FindUsersQueryDto } from './dto/find-users-query.dto';
 import { ItemsService } from './../items/items.service';
 import { BiddingsService } from './../biddings/biddings.service';
 
-
 @Injectable()
 export class UsersService {
-  constructor(@InjectRepository(User)
-  private usersRepository: Repository<User>,
-    private itemsService: ItemsService,
+  constructor(
+    @InjectRepository(User)
+    private usersRepository: Repository<User>,
 
+    @Inject(forwardRef(() => ItemsService))
+    private itemsService: ItemsService,
     @Inject(forwardRef(() => BiddingsService))
-    private biddingsService: BiddingsService
-  ) { }
+    private biddingsService: BiddingsService,
+  ) {}
 
   private async getUser(id: string): Promise<User> {
     const user = await this.usersRepository.findOne({ where: { id } });
-    if (!user) throw new NotFoundException(`User with Id: ${id} not found!`)
+    if (!user) throw new NotFoundException(`User with Id: ${id} not found!`);
     return user;
   }
 
@@ -34,12 +40,12 @@ export class UsersService {
       role: createUserDto.role || Role.BIDDER,
     });
     return this.usersRepository.save(user);
-  };
+  }
 
-  async findOne(id: string, relations : string[] = []): Promise<User> {
+  async findOne(id: string, relations: string[] = []): Promise<User> {
     const user = await this.usersRepository.findOne({
       where: { id },
-      relations
+      relations,
     });
     if (!user) {
       throw new NotFoundException(`User with Id: ${id} not found in the DB! `);
@@ -47,9 +53,10 @@ export class UsersService {
     return user;
   }
 
-  async findByEmail(email : string) : Promise<User> {
-    const user = await this.usersRepository.findOne({where : {email}});
-    if( !user ) throw new NotFoundException(`User with email ${email} not found!`);
+  async findByEmail(email: string): Promise<User> {
+    const user = await this.usersRepository.findOne({ where: { email } });
+    if (!user)
+      throw new NotFoundException(`User with email ${email} not found!`);
     return user;
   }
 
@@ -68,13 +75,16 @@ export class UsersService {
   async findSellerItems(id: string): Promise<Item[]> {
     const user = await this.getUser(id);
     if (user.role !== Role.SELLER)
-      throw new BadRequestException(`The user with Id: ${id} is not registered as a seller!`);
+      throw new BadRequestException(
+        `The user with Id: ${id} is not registered as a seller!`,
+      );
     return this.itemsService.findBySeller(id);
   }
 
   async findBidderBids(id: string): Promise<Bidding[]> {
     const user = await this.getUser(id);
-    if (user.role !== Role.BIDDER) throw new BadRequestException(`User with Id : ${id} is not a bidder`)
+    if (user.role !== Role.BIDDER)
+      throw new BadRequestException(`User with Id : ${id} is not a bidder`);
     return this.biddingsService.findBidsByBider(user.id);
   }
 
@@ -93,7 +103,7 @@ export class UsersService {
       where,
       take: limit,
       skip,
-      order: { name: "ASC" }
+      order: { name: 'ASC' },
     });
   }
 }

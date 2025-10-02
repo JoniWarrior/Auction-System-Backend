@@ -55,35 +55,32 @@ export class BiddingsGateway implements OnGatewayConnection, OnGatewayDisconnect
         this.server.to(`auction_${auctionId}`).emit("newBid", bidding);
     }
 
-    // async broadcastOutBid(auctionId: string, bidding: any, outbidderIds: string[]) {
-    //     const auction = await this.auctionsService.findOne(auctionId);
-
-    //     if (!auction) return;
-
-    //     const message = `You have been outbid in auction: ${auction.item.title} with bid: ${bidding.amount}`;
-
-    //     for (const userId of outbidderIds) {
-    //         const socketId = this.userSockets.get(userId);
-
-    //         // save notification in DB
-    //         await this.notificationsService.create(userId, auctionId, message);
-
-    //         // emit to connected user
-    //         if (socketId) {
-    //             this.server.to(socketId).emit("outBid", { message, bidding });
-    //         }
+    // Version 1
+    // broadcastOutBid(auctionId: string, bidding: any, bidderId: string) {
+    //     const bidderSocketId = this.userSockets.get(bidderId);
+    //     console.log("Map after out Bid: ", this.userSockets);
+    //     if (bidderSocketId) {
+    //         this.server.to(`auction_${auctionId}`).except(bidderSocketId).emit("outBid", bidding);
+    //     } else {
+    //         this.server.to(`auction_${auctionId}`).emit("outbid", bidding);
     //     }
-    // }
+    // } 
 
-    broadcastOutBid(auctionId: string, bidding: any, bidderId: string) {
-        const bidderSocketId = this.userSockets.get(bidderId);
-        console.log("Map after out Bid: ", this.userSockets);
-        if (bidderSocketId) {
-            this.server.to(`auction_${auctionId}`).except(bidderSocketId).emit("outBid", bidding);
-        } else {
-            this.server.to(`auction_${auctionId}`).emit("outbid", bidding);
+    async broadcastOutBid(auctionId: string, bidding: any, outbidderIds: string[]) {
+    const auction = await this.auctionsService.findOne(auctionId);
+    if (!auction) return;
+
+    const message = `You have been outbid in auction: ${auction.item.title} with bid: ${bidding.amount}`;
+
+    for (const userId of outbidderIds) {
+        const socketId = this.userSockets.get(userId);
+ 
+        await this.notificationsService.create(userId, auctionId, message);
+        if (socketId) {
+            this.server.to(socketId).emit("outBid", { message, bidding });
         }
     }
+}
 
     @SubscribeMessage("startBidding")
     handleStartBidding(

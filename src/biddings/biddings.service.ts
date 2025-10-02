@@ -1,4 +1,10 @@
-import { Injectable, NotFoundException, BadRequestException, Inject, forwardRef } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  Inject,
+  forwardRef,
+} from '@nestjs/common';
 import { CreateBiddingDto } from './dto/create-bidding.dto';
 import { UpdateBiddingDto } from './dto/update-bidding.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -17,56 +23,73 @@ export class BiddingsService {
     private biddingsRepository: Repository<Bidding>,
 
     @Inject(forwardRef(() => UsersService))
-    private usersService : UsersService,
-    
+    private usersService: UsersService,
+ 
     @Inject(forwardRef(() => AuctionsService))
     private auctionsService: AuctionsService,
 
     @Inject()
     private readonly biddingsGateway: BiddingsGateway,
-  ) { }
+  ) {}
 
   private getHighestBid(auction: Auction): number {
-    return auction.biddings.length ? Math.max(...auction.biddings.map(b => b.amount)) : auction.starting_price;
+    return auction.biddings.length
+      ? Math.max(...auction.biddings.map((b) => b.amount))
+      : auction.starting_price;
   }
 
-  private async saveAndLoadBidding(bidding : Bidding) : Promise<Bidding> {
+  private async saveAndLoadBidding(bidding: Bidding): Promise<Bidding> {
     const saved = await this.biddingsRepository.save(bidding);
     return this.biddingsRepository.findOneOrFail({
-      where : { id : saved.id},
-      relations : ["auction", "bidder", "auction.item"]
+      where: { id: saved.id },
+      relations: ['auction', 'bidder', 'auction.item'],
     });
   }
 
   async create(createBiddingDto: CreateBiddingDto): Promise<Bidding> {
     const { auctionId, bidderId, amount } = createBiddingDto;
 
-    const auction = await this.auctionsService.validateAuctionForBidding(auctionId);
+    const auction =
+      await this.auctionsService.validateAuctionForBidding(auctionId);
     const user = await this.usersService.findOne(bidderId);
-    if (user.role !== Role.BIDDER) throw new BadRequestException(`User with Id ${bidderId} is not a bidder`);
+    if (user.role !== Role.BIDDER)
+      throw new BadRequestException(`User with Id ${bidderId} is not a bidder`);
     const currentHighestBid = this.getHighestBid(auction);
 
-    if (amount <= currentHighestBid) throw new BadRequestException(`Bid amount must be higher than $${currentHighestBid}`);
+    if (amount <= currentHighestBid)
+      throw new BadRequestException(
+        `Bid amount must be higher than $${currentHighestBid}`,
+      );
 
     const isFirstBid = (auction.biddings?.length ?? 0) === 0;
     const bidding = this.biddingsRepository.create({
       amount: amount,
       auction: { id: auction.id },
-      bidder: { id: user.id }
+      bidder: { id: user.id },
     });
-    
+
     const fullBid = await this.saveAndLoadBidding(bidding);
     await this.auctionsService.update(auction.id, {
       current_price: amount,
-      ...(isFirstBid && { status: STATUS.ACTIVE })
+      ...(isFirstBid && { status: STATUS.ACTIVE }),
     });
 
     this.biddingsGateway.broadcastNewBid(auction.id, fullBid);
-    
-    // const pastBidders = auction.biddings.map(b => b.bidder.id).filter(id => id !== bidderId);
-    // const uniquePasBidders = [... new Set(pastBidders)];
-    // this.biddingsGateway.broadcastOutBid(auction.id, fullBid, uniquePasBidders);
-    this.biddingsGateway.broadcastOutBid(auction.id, fullBid, bidderId);
+
+    // Version 1:
+    // this.biddingsGateway.broadcastOutBid(auction.id, fullBid, bidderId);
+
+    const pastBidders = auction.biddings
+      .map((b) => b.bidder.id)
+      .filter((id) => id !== bidderId); // exlcude current bider
+
+    const uniquePastBidders = [...new Set(pastBidders)];
+
+    await this.biddingsGateway.broadcastOutBid(
+      auction.id,
+      fullBid,
+      uniquePastBidders,
+    );
 
     return fullBid;
   }
@@ -74,7 +97,7 @@ export class BiddingsService {
   async findAll(): Promise<Bidding[]> {
     const biddings = await this.biddingsRepository.find({
       relations: ['auction', 'bidder'],
-      order: { amount: "DESC" }
+      order: { amount: 'DESC' },
     });
     if (!biddings.length) throw new NotFoundException('No biddings found');
     return biddings;
@@ -83,15 +106,22 @@ export class BiddingsService {
   async findOne(id: string): Promise<Bidding> {
     const bidding = await this.biddingsRepository.findOne({
       where: { id },
-      relations: ['auction', 'bidder']
+      relations: ['auction', 'bidder'],
     });
-    if (!bidding) throw new NotFoundException(`Bidding with ID ${id} not found`);
+    if (!bidding)
+      throw new NotFoundException(`Bidding with ID ${id} not found`);
     return bidding;
   }
 
-  async update(id: string, updateBiddingDto: UpdateBiddingDto): Promise<Bidding> {
+  async update(
+    id: string,
+    updateBiddingDto: UpdateBiddingDto,
+  ): Promise<Bidding> {
     const bidding = await this.findOne(id);
-    const updatedBidding = this.biddingsRepository.merge(bidding, updateBiddingDto);
+    const updatedBidding = this.biddingsRepository.merge(
+      bidding,
+      updateBiddingDto,
+    );
     return this.biddingsRepository.save(updatedBidding);
   }
 
@@ -105,29 +135,28 @@ export class BiddingsService {
     return this.biddingsRepository.find({
       where: { auction: { id: auctionId } },
       relations: ['bidder'],
-      order: { amount: 'DESC' }
+      order: { amount: 'DESC' },
     });
   }
-  
+
   async findBidsByBider(userId: string): Promise<Bidding[]> {
     return this.biddingsRepository
-      .createQueryBuilder("bidding")
-      .leftJoinAndSelect("bidding.auction", "auction")
-      .leftJoinAndSelect("auction.item", "item")
+      .createQueryBuilder('bidding')
+      .leftJoinAndSelect('bidding.auction', 'auction')
+      .leftJoinAndSelect('auction.item', 'item')
       .select([
-        "bidding.id",
-        "bidding.amount",
-        "bidding.created_at",
-        "auction.id",
-        "auction.starting_price",
-        "auction.current_price",
-        "auction.end_time",
-        "auction.status",
-        "item.title",
-        "item.description",
+        'bidding.id',
+        'bidding.amount',
+        'bidding.created_at',
+        'auction.id',
+        'auction.starting_price',
+        'auction.current_price',
+        'auction.end_time',
+        'auction.status',
+        'item.title',
+        'item.description',
       ])
-      .where("bidding.bidder_id = :bidderId", { bidderId: userId })
+      .where('bidding.bidder_id = :bidderId', { bidderId: userId })
       .getMany();
   }
-
 }

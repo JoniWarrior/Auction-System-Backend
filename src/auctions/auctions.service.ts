@@ -177,7 +177,7 @@ export class AuctionsService {
   // }
 
   async validateAuctionForBidding(auctionId: string): Promise<Auction> {
-    const auction = await this.getAuction(auctionId, ['biddings', 'item']);
+    const auction = await this.getAuction(auctionId, ['biddings', "biddings.bidder", 'item']);
     if (auction.status === STATUS.FINISHED) throw new BadRequestException('Auction has already finished');
 
     const now = new Date();
