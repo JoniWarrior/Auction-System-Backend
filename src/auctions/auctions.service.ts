@@ -1,13 +1,13 @@
 import { Injectable, NotFoundException, Logger, BadRequestException, Inject, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Not, Repository, LessThan, FindOptionsWhere } from 'typeorm';
-import { CreateAuctionDto } from './dto/create-auction.dto';
+import { CreateAuction } from './types/create-auction.type';
 import { Auction, STATUS } from './entities/auction.entity';
 import { Bidding } from './../biddings/entities/bidding.entity';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { ItemsService } from 'src/items/items.service';
 import { BiddingsService } from 'src/biddings/biddings.service';
-import { FindAuctionsFilterDTO } from './dto/auctions-filter.dto';
+import { FindAuctionsFilter } from './types/auctions-filter.type';
 
 @Injectable()
 export class AuctionsService {
@@ -36,9 +36,9 @@ export class AuctionsService {
     );
   }
 
-  async create(createAuctionDto: CreateAuctionDto): Promise<Auction> {
-    const item = await this.itemsService.findOne(createAuctionDto.itemId);
-    const { starting_price, end_time } = createAuctionDto;
+  async create(createAuction: CreateAuction): Promise<Auction> {
+    const item = await this.itemsService.findOne(createAuction.itemId);
+    const { starting_price, end_time } = createAuction;
     const auction = this.auctionsRepository.create({
       starting_price,
       end_time,
@@ -46,11 +46,11 @@ export class AuctionsService {
       item
     });
     const savedAuction = await this.auctionsRepository.save(auction);
-    savedAuction.item = item; // attach manually the item relation too
+    savedAuction.item = item;
     return savedAuction;
   }
 
-  async findAll(filters: FindAuctionsFilterDTO): Promise<Auction[]> {
+  async findAll(filters: FindAuctionsFilter): Promise<Auction[]> {
     const where: FindOptionsWhere<Auction> = {};
     if (filters.status) where.status = filters.status;
 

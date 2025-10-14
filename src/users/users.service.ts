@@ -7,12 +7,12 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, ILike, FindOptionsWhere } from 'typeorm';
 import { User, Role } from './entities/user.entity';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
+import { CreateUser } from './types/create-user.type';
+import { UpdateUser } from './types/update-user.type';
 import { NotFoundException } from '@nestjs/common';
 import { Item } from './../items/entities/item.entity';
 import { Bidding } from './../biddings/entities/bidding.entity';
-import { FindUsersQueryDto } from './dto/find-users-query.dto';
+import { FindUsersQuery } from './types/find-users-query.type';
 import { ItemsService } from './../items/items.service';
 import { BiddingsService } from './../biddings/biddings.service';
 
@@ -34,10 +34,10 @@ export class UsersService {
     return user;
   }
 
-  async create(createUserDto: CreateUserDto): Promise<User> {
+  async create(createUser: CreateUser): Promise<User> {
     const user = this.usersRepository.create({
-      ...createUserDto,
-      role: createUserDto.role || Role.BIDDER,
+      ...createUser,
+      role: createUser.role || Role.BIDDER,
     });
     return this.usersRepository.save(user);
   }
@@ -60,9 +60,9 @@ export class UsersService {
     return user;
   }
 
-  async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
+  async update(id: string, updateUser: UpdateUser): Promise<User> {
     const user = await this.getUser(id);
-    const updatedUser = this.usersRepository.merge(user, updateUserDto);
+    const updatedUser = this.usersRepository.merge(user, updateUser);
     return this.usersRepository.save(updatedUser);
   }
 
@@ -88,7 +88,7 @@ export class UsersService {
     return this.biddingsService.findBidsByBider(user.id);
   }
 
-  async findAll(filters: FindUsersQueryDto): Promise<User[]> {
+  async findAll(filters: FindUsersQuery): Promise<User[]> {
     const where: FindOptionsWhere<User> = {};
 
     if (filters.email) where.email = filters.email;

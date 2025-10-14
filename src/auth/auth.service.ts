@@ -1,9 +1,9 @@
-import { Injectable, BadRequestException, UnauthorizedException, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException, UnauthorizedException } from '@nestjs/common';
 import { User } from './../users/entities/user.entity';
 import { UsersService } from './../users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from "bcrypt";
-import { CreateUserDto } from './../users/dto/create-user.dto';
+import type { CreateUser } from '../users/types/create-user.type';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 
@@ -17,23 +17,23 @@ export class AuthService {
         private jwtService : JwtService
     ) {}
 
-    async register(createUserDto : CreateUserDto) {
+    async register(createUser : CreateUser) {
         const existingUser = await this.usersRepository.findOne({
-            where : {email : createUserDto.email}
+            where : {email : createUser.email}
         });
 
         if (existingUser) {
             throw new BadRequestException("Email already exists")
         }
         
-        if (createUserDto.password !== createUserDto.confirmPassword) {
+        if (createUser.password !== createUser.confirmPassword) {
             throw new BadRequestException("Password Confirm does not match password");
         }       
 
-        const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
+        const hashedPassword = await bcrypt.hash(createUser.password, 10);
 
         const user = await this.usersService.create({
-            ...createUserDto,
+            ...createUser,
             password : hashedPassword
         });
 

@@ -5,8 +5,8 @@ import {
   Inject,
   forwardRef,
 } from '@nestjs/common';
-import { CreateBiddingDto } from './dto/create-bidding.dto';
-import { UpdateBiddingDto } from './dto/update-bidding.dto';
+import { CreateBidding } from './types/create-bidding.type';
+import { UpdateBidding } from './types/update-bidding.type';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Bidding } from './entities/bidding.entity';
 import { Repository } from 'typeorm';
@@ -46,8 +46,8 @@ export class BiddingsService {
     });
   }
 
-  async create(createBiddingDto: CreateBiddingDto): Promise<Bidding> {
-    const { auctionId, bidderId, amount } = createBiddingDto;
+  async create(createBidding: CreateBidding): Promise<Bidding> {
+    const { auctionId, bidderId, amount } = createBidding;
 
     const auction =
       await this.auctionsService.validateAuctionForBidding(auctionId);
@@ -115,12 +115,12 @@ export class BiddingsService {
 
   async update(
     id: string,
-    updateBiddingDto: UpdateBiddingDto,
+    updateBidding: UpdateBidding,
   ): Promise<Bidding> {
     const bidding = await this.findOne(id);
     const updatedBidding = this.biddingsRepository.merge(
       bidding,
-      updateBiddingDto,
+      updateBidding,
     );
     return this.biddingsRepository.save(updatedBidding);
   }

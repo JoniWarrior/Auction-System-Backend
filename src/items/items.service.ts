@@ -6,8 +6,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { CreateItemDto } from './dto/create-item.dto';
-import { UpdateItemDto } from './dto/update-item.dto';
+import { CreateItem } from './types/create-item.type';
+import { UpdateItem } from './types/update-item.type';
 import { Item } from './entities/item.entity';
 import { User } from './../users/entities/user.entity';
 import { Repository } from 'typeorm';
@@ -51,15 +51,15 @@ export class ItemsService {
   }
 
   async create(
-    createItemDto: CreateItemDto,
+    createItem: CreateItem,
     file: Express.Multer.File,
   ): Promise<Item> {
     try {
-      const seller = await this.findAndValidateSeller(createItemDto.sellerId);
+      const seller = await this.findAndValidateSeller(createItem.sellerId);
       const imageURL = await this.uploadToCloudinary(file);
       const item = this.itemsRepository.create({
-        title: createItemDto.title,
-        description: createItemDto.description,
+        title: createItem.title,
+        description: createItem.description,
         imageURL,
         seller,
       });
@@ -98,9 +98,9 @@ export class ItemsService {
     return items;
   }
 
-  async update(id: string, updateItemDto: UpdateItemDto): Promise<Item> {
+  async update(id: string, updateItem: UpdateItem): Promise<Item> {
     const originalItem = await this.findOne(id);
-    const updatedItem = this.itemsRepository.merge(originalItem, updateItemDto);
+    const updatedItem = this.itemsRepository.merge(originalItem, updateItem);
     return this.itemsRepository.save(updatedItem);
   }
 

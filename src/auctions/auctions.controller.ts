@@ -1,42 +1,73 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards, Req} from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Query,
+  UseGuards,
+  Req,
+} from '@nestjs/common';
 import { AuctionsService } from './auctions.service';
-import { CreateAuctionDto } from './dto/create-auction.dto';
-import { UpdateAuctionDto } from './dto/update-auction.dto';
+import {
+  type CreateAuction,
+} from './types/create-auction.type';
+import {
+  type UpdateAuction,
+} from './types/update-auction.type';
 import { JwtAuthGuard } from './../auth/guards/auth.guards';
 import { Roles, RolesGuard } from './../auth/guards/roles.guards';
-import { FindAuctionsFilterDTO } from './dto/auctions-filter.dto';
+import { type FindAuctionsFilter } from './types/auctions-filter.type';
+import { ValidationPipe } from 'src/pipes/joi-validator.pipe';
+import Joi from 'joi';
+import { STATUS } from './entities/auction.entity';
 
 @Controller('auctions')
 export class AuctionsController {
   constructor(private readonly auctionsService: AuctionsService) {}
 
-  @Roles("seller")
+  @Roles('seller')
   @UseGuards(RolesGuard)
   @Post()
-  create(@Body() createAuctionDto: CreateAuctionDto) {
-    return this.auctionsService.create(createAuctionDto);
+  create(
+    @Body(ValidationPipe.from(Joi.object({
+    starting_price : Joi.number().required().min(0),
+    end_time : Joi.date().required(),
+    itemId : Joi.string().guid({version : "uuidv4"}).required()
+  })))
+    createAuction: CreateAuction,
+  ) {
+    return this.auctionsService.create(createAuction);
   }
 
   @UseGuards(JwtAuthGuard)
-  @Roles("seller")
+  @Roles('seller')
   @UseGuards(RolesGuard)
   @Get('/my-auctions-as-seller')
   findMyAuctions(@Req() req: Request) {
     const user = req['user'];
-    console.log("User from Req Body: ", user);
+    console.log('User from Req Body: ', user);
     return this.auctionsService.findMyAuctionsAsSeller(user.id);
   }
 
   @UseGuards(JwtAuthGuard)
-  @Get("/my-auctions-as-bidder")
-  findMyAuctionsAsBidder(@Req() req : Request) {
-    const bidder = req["user"];
-    console.log("User from Req Body: ", bidder);
+  @Get('/my-auctions-as-bidder')
+  findMyAuctionsAsBidder(@Req() req: Request) {
+    const bidder = req['user'];
+    console.log('User from Req Body: ', bidder);
     return this.auctionsService.findMyAuctionsAsBidder(bidder.id);
   }
 
   @Get()
-  async findAll(@Query() filters : FindAuctionsFilterDTO) {
+  async findAll(@Query(ValidationPipe.from(
+    Joi.object({
+      status : Joi.string().valid(...Object.values(STATUS)),
+      limit : Joi.number(),
+      page : Joi.number()
+    })
+  )) filters: FindAuctionsFilter) {
     return this.auctionsService.findAll(filters);
   }
 
@@ -47,8 +78,16 @@ export class AuctionsController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateAuctionDto: UpdateAuctionDto) {
-    return this.auctionsService.update(id, updateAuctionDto);
+  update(
+    @Param('id') id: string,
+    @Body(ValidationPipe.from(Joi.object({
+    starting_price : Joi.number().required().min(0),
+    end_time : Joi.date().required(),
+    itemId : Joi.string().guid({version : "uuidv4"}).required()
+  })))
+    updateAuction: UpdateAuction,
+  ) {
+    return this.auctionsService.update(id, updateAuction);
   }
 
   @Delete(':id')
@@ -56,8 +95,8 @@ export class AuctionsController {
     return this.auctionsService.remove(id);
   }
 
-  @Get("/:auctionId/biddings")
-  findBiddingsOfAuction(@Param("auctionId") auctionId : string) {
+  @Get('/:auctionId/biddings')
+  findBiddingsOfAuction(@Param('auctionId') auctionId: string) {
     return this.auctionsService.findBiddingsOfAuction(auctionId);
   }
 
@@ -66,8 +105,8 @@ export class AuctionsController {
   //   return await this.auctionsService.getAuctionWinner(id);
   // }
 
-  @Post(":id/close")
-  async closeAuction(@Param("id") id : string) {
+  @Post(':id/close')
+  async closeAuction(@Param('id') id: string) {
     return await this.auctionsService.closeAuction(id);
   }
 }

@@ -1,22 +1,28 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, UseInterceptors, UploadedFile, Req } from '@nestjs/common';
 import { ItemsService } from './items.service';
-import { CreateItemDto } from './dto/create-item.dto';
-import { UpdateItemDto } from './dto/update-item.dto';
+import { type CreateItem } from "./types/create-item.type"
+import { type UpdateItem } from './types/update-item.type';
 import { JwtAuthGuard } from './../auth/guards/auth.guards';
 import {Roles, RolesGuard} from "./../auth/guards/roles.guards";
 import { FileInterceptor } from '@nestjs/platform-express';
 import * as multer from "multer";
+import { ValidationPipe } from 'src/pipes/joi-validator.pipe';
+import Joi from 'joi';
 
 @Controller('items')
-@UseGuards(JwtAuthGuard, RolesGuard) 
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Roles("seller")
 export class ItemsController {
   constructor(private readonly itemsService: ItemsService) {}
 
   @Post()
   @UseInterceptors(FileInterceptor('image', { storage: multer.memoryStorage() }))
-  create( @Body() createItemDto: CreateItemDto, @UploadedFile() file: Express.Multer.File) {
-    return this.itemsService.create(createItemDto, file);
+  create(@Body(ValidationPipe.from(Joi.object({
+  title: Joi.string().required(),
+  description: Joi.string().required().min(15),
+  sellerId: Joi.string().guid({ version: 'uuidv4' }),
+}))) createItem: CreateItem, @UploadedFile() file: Express.Multer.File) {
+    return this.itemsService.create(createItem, file);
   }
 
   @Get()
@@ -37,8 +43,12 @@ export class ItemsController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateItemDto: UpdateItemDto) {
-    return this.itemsService.update(id, updateItemDto);
+  update(@Param('id') id: string, @Body(ValidationPipe.from(Joi.object({
+  title: Joi.string().required(),
+  description: Joi.string().required().min(15),
+  sellerId: Joi.string().guid({ version: 'uuidv4' }),
+}))) updateItem: UpdateItem) {
+    return this.itemsService.update(id, updateItem);
   }
 
   @Delete(':id')

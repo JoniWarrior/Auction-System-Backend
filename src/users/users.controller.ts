@@ -1,36 +1,91 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards } from '@nestjs/common';
-import { JwtAuthGuard } from './../auth/guards/auth.guards'; 
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
+import { JwtAuthGuard } from './../auth/guards/auth.guards';
 import { UsersService } from './users.service';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
-import { FindUsersQueryDto } from './dto/find-users-query.dto';
+import { type CreateUser } from './types/create-user.type';
+import { type UpdateUser } from './types/update-user.type';
+import { type FindUsersQuery } from './types/find-users-query.type';
+import Joi from 'joi';
+import { Role } from './entities/user.entity';
+import { ValidationPipe } from 'src/pipes/joi-validator.pipe';
+
 @Controller('users')
 @UseGuards(JwtAuthGuard)
 export class UsersController {
-  constructor(
-    private readonly usersService: UsersService,
-    
-  ) {}
+  constructor(private readonly usersService: UsersService) {}
 
   @Post()
   @UseGuards()
-  create(@Body() createUserDto: CreateUserDto) {
-    return this.usersService.create(createUserDto);
+  create(
+    @Body(
+      ValidationPipe.from(
+        Joi.object({
+          name: Joi.string().required(),
+          email: Joi.string().email().required(),
+          password: Joi.string().required().min(8),
+          confirmPassword: Joi.string().required().min(8),
+          role: Joi.string()
+            .valid(...Object.values(Role))
+            .required(),
+        }),
+      ),
+    )
+    createUser: CreateUser,
+  ) {
+    return this.usersService.create(createUser);
   }
 
   @Get()
-  findUsers(@Query() query : FindUsersQueryDto) {
+  findUsers(
+    @Query(
+      ValidationPipe.from(
+        Joi.object({
+          email: Joi.string().email(),
+          name: Joi.string(),
+          role: Joi.string().valid(...Object.values(Role)),
+          limit: Joi.number(),
+          page: Joi.number(),
+        }),
+      ),
+    )
+    query: FindUsersQuery,
+  ) {
     return this.usersService.findAll(query);
   }
-  
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.usersService.findOne(id);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
-    return this.usersService.update(id, updateUserDto);
+  update(
+    @Param('id') id: string,
+    @Body(
+      ValidationPipe.from(
+        Joi.object({
+          name: Joi.string().required(),
+          email: Joi.string().email().required(),
+          password: Joi.string().required().min(8),
+          confirmPassword: Joi.string().required().min(8),
+          role: Joi.string()
+            .valid(...Object.values(Role))
+            .required(),
+        }),
+      ),
+    )
+    updateUser: UpdateUser,
+  ) {
+    return this.usersService.update(id, updateUser);
   }
 
   @Delete(':id')
@@ -38,15 +93,13 @@ export class UsersController {
     return this.usersService.remove(id);
   }
 
-
-  @Get(":id/items")
-  findSellerItems(@Param("id") id : string) {
-    return this.usersService.findSellerItems(id)
+  @Get(':id/items')
+  findSellerItems(@Param('id') id: string) {
+    return this.usersService.findSellerItems(id);
   }
 
-  @Get(":id/biddings")
-  findBidderBids(@Param("id") id : string) {
+  @Get(':id/biddings')
+  findBidderBids(@Param('id') id: string) {
     return this.usersService.findBidderBids(id);
   }
-
 }

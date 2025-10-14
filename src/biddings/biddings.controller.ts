@@ -1,9 +1,25 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
+  Query,
+} from '@nestjs/common';
 import { BiddingsService } from './biddings.service';
-import { CreateBiddingDto } from './dto/create-bidding.dto';
-import { UpdateBiddingDto } from './dto/update-bidding.dto';
+import {
+  type CreateBidding,
+} from './types/create-bidding.type';
+import {
+  type UpdateBidding,
+} from './types/update-bidding.type';
 import { JwtAuthGuard } from './../auth/guards/auth.guards';
-import {Roles, RolesGuard} from "./../auth/guards/roles.guards";
+import { Roles, RolesGuard } from './../auth/guards/roles.guards';
+import Joi from 'joi';
+import { ValidationPipe } from 'src/pipes/joi-validator.pipe';
 
 @Controller('biddings')
 @UseGuards(JwtAuthGuard)
@@ -11,10 +27,21 @@ export class BiddingsController {
   constructor(private readonly biddingsService: BiddingsService) {}
 
   @Post()
-  @Roles("bidder")
-  @UseGuards(RolesGuard) 
-  create(@Body() createBiddingDto: CreateBiddingDto) {
-    return this.biddingsService.create(createBiddingDto);
+  @Roles('bidder')
+  @UseGuards(RolesGuard)
+  create(
+    @Body(
+      ValidationPipe.from(
+        Joi.object({
+          amount: Joi.number().required().min(0),
+          auctionId: Joi.string().guid({ version: 'uuidv4' }),
+          bidderId: Joi.string().guid({ version: 'uuidv4' }),
+        }),
+      ),
+    )
+    createBidding: CreateBidding,
+  ) {
+    return this.biddingsService.create(createBidding);
   }
 
   @Get()
@@ -28,17 +55,28 @@ export class BiddingsController {
   }
 
   @Patch(':id')
-  @Roles("bidder")
+  @Roles('bidder')
   @UseGuards(RolesGuard)
-  update(@Param('id') id: string, @Body() updateBiddingDto: UpdateBiddingDto) {
-    return this.biddingsService.update(id, updateBiddingDto);
+  update(
+    @Param('id') id: string,
+    @Body(
+      ValidationPipe.from(
+        Joi.object({
+          amount: Joi.number().required().min(0),
+          auctionId: Joi.string().guid({ version: 'uuidv4' }),
+          bidderId: Joi.string().guid({ version: 'uuidv4' }),
+        }),
+      ),
+    )
+    updateBidding: UpdateBidding,
+  ) {
+    return this.biddingsService.update(id, updateBidding);
   }
 
   @Delete(':id')
-  @Roles("bidder")
+  @Roles('bidder')
   @UseGuards(RolesGuard)
   remove(@Param('id') id: string) {
     return this.biddingsService.remove(id);
   }
-
 }
