@@ -1,15 +1,15 @@
 import { Module, forwardRef} from '@nestjs/common';
-import { BiddingsService } from './biddings.service';
-import { BiddingsController } from './biddings.controller';
+import { BiddingsService } from '../biddings/biddings.service';
+import { BiddingsController } from '../biddings/biddings.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Bidding } from '../entities/bidding.entity';
 import { Auction } from '../entities/auction.entity';
 import { User } from '../entities/user.entity';
-import { JwtAuthModule } from "./../auth/guards/jwt-auth.module";
-import { AuctionsModule } from './../auctions/auctions.module';
-import { BiddingsGateway } from './biddings-gateway';
-import { UsersModule } from './../users/users.module';
-import { NotificationsModule } from './../notifications/notifications.module';
+import { JwtAuthModule } from "../auth/guards/jwt-auth.module";
+import { AuctionsModule } from './auctions.module';
+import { BiddingsGateway } from '../biddings/biddings-gateway';
+import { UsersModule } from './users.module';
+import { NotificationsModule } from './notifications.module';
 
 @Module({
   imports : [TypeOrmModule.forFeature([Bidding, Auction, User]), 
