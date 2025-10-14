@@ -2,8 +2,8 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, UseInterc
 import { ItemsService } from './items.service';
 import { type CreateItem } from "./types/create-item.type"
 import { type UpdateItem } from './types/update-item.type';
-import { JwtAuthGuard } from './../auth/guards/auth.guards';
-import {Roles, RolesGuard} from "./../auth/guards/roles.guards";
+import { JwtAuthGuard } from '../../auth/guards/auth.guards';
+import {Roles, RolesGuard} from "../../auth/guards/roles.guards";
 import { FileInterceptor } from '@nestjs/platform-express';
 import * as multer from "multer";
 import { ValidationPipe } from 'src/pipes/joi-validator.pipe';

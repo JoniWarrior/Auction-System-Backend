@@ -2,11 +2,11 @@ import { Injectable, NotFoundException, Logger, BadRequestException, Inject, for
 import { InjectRepository } from '@nestjs/typeorm';
 import { Not, Repository, LessThan, FindOptionsWhere } from 'typeorm';
 import { CreateAuction } from './types/create-auction.type';
-import { Auction, STATUS } from '../entities/auction.entity';
-import { Bidding } from '../entities/bidding.entity';
+import { Auction, STATUS } from '../../entities/auction.entity';
+import { Bidding } from '../../entities/bidding.entity';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { ItemsService } from 'src/items/items.service';
-import { BiddingsService } from 'src/biddings/biddings.service';
+import { ItemsService } from 'src/modules/items/items.service';
+import { BiddingsService } from 'src/modules/biddings/biddings.service';
 import { FindAuctionsFilter } from './types/auctions-filter.type';
 
 @Injectable()

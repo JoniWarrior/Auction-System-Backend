@@ -11,18 +11,14 @@ import {
   Req,
 } from '@nestjs/common';
 import { AuctionsService } from './auctions.service';
-import {
-  type CreateAuction,
-} from './types/create-auction.type';
-import {
-  type UpdateAuction,
-} from './types/update-auction.type';
-import { JwtAuthGuard } from './../auth/guards/auth.guards';
-import { Roles, RolesGuard } from './../auth/guards/roles.guards';
+import { type CreateAuction } from './types/create-auction.type';
+import { type UpdateAuction } from './types/update-auction.type';
+import { JwtAuthGuard } from 'src/auth/guards/auth.guards';
+import { Roles, RolesGuard } from 'src/auth/guards/roles.guards';
 import { type FindAuctionsFilter } from './types/auctions-filter.type';
 import { ValidationPipe } from 'src/pipes/joi-validator.pipe';
 import Joi from 'joi';
-import { STATUS } from '../entities/auction.entity';
+import { STATUS } from 'src/entities/auction.entity';
 
 @Controller('auctions')
 export class AuctionsController {
@@ -32,11 +28,15 @@ export class AuctionsController {
   @UseGuards(RolesGuard)
   @Post()
   create(
-    @Body(ValidationPipe.from(Joi.object({
-    starting_price : Joi.number().required().min(0),
-    end_time : Joi.date().required(),
-    itemId : Joi.string().guid({version : "uuidv4"}).required()
-  })))
+    @Body(
+      ValidationPipe.from(
+        Joi.object({
+          starting_price: Joi.number().required().min(0),
+          end_time: Joi.date().required(),
+          itemId: Joi.string().guid({ version: 'uuidv4' }).required(),
+        }),
+      ),
+    )
     createAuction: CreateAuction,
   ) {
     return this.auctionsService.create(createAuction);
@@ -61,13 +61,18 @@ export class AuctionsController {
   }
 
   @Get()
-  async findAll(@Query(ValidationPipe.from(
-    Joi.object({
-      status : Joi.string().valid(...Object.values(STATUS)),
-      limit : Joi.number(),
-      page : Joi.number()
-    })
-  )) filters: FindAuctionsFilter) {
+  async findAll(
+    @Query(
+      ValidationPipe.from(
+        Joi.object({
+          status: Joi.string().valid(...Object.values(STATUS)),
+          limit: Joi.number(),
+          page: Joi.number(),
+        }),
+      ),
+    )
+    filters: FindAuctionsFilter,
+  ) {
     return this.auctionsService.findAll(filters);
   }
 
@@ -80,11 +85,15 @@ export class AuctionsController {
   @Patch(':id')
   update(
     @Param('id') id: string,
-    @Body(ValidationPipe.from(Joi.object({
-    starting_price : Joi.number().required().min(0),
-    end_time : Joi.date().required(),
-    itemId : Joi.string().guid({version : "uuidv4"}).required()
-  })))
+    @Body(
+      ValidationPipe.from(
+        Joi.object({
+          starting_price: Joi.number().required().min(0),
+          end_time: Joi.date().required(),
+          itemId: Joi.string().guid({ version: 'uuidv4' }).required(),
+        }),
+      ),
+    )
     updateAuction: UpdateAuction,
   ) {
     return this.auctionsService.update(id, updateAuction);

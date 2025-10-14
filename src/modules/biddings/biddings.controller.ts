@@ -16,8 +16,8 @@ import {
 import {
   type UpdateBidding,
 } from './types/update-bidding.type';
-import { JwtAuthGuard } from './../auth/guards/auth.guards';
-import { Roles, RolesGuard } from './../auth/guards/roles.guards';
+import { JwtAuthGuard } from '../../auth/guards/auth.guards';
+import { Roles, RolesGuard } from '../../auth/guards/roles.guards';
 import Joi from 'joi';
 import { ValidationPipe } from 'src/pipes/joi-validator.pipe';
 

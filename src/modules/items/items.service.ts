@@ -8,12 +8,12 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { CreateItem } from './types/create-item.type';
 import { UpdateItem } from './types/update-item.type';
-import { Item } from '../entities/item.entity';
-import { User } from '../entities/user.entity';
+import { Item } from '../../entities/item.entity';
+import { User } from '../../entities/user.entity';
 import { Repository } from 'typeorm';
 import { v2 as cloudinary } from 'cloudinary';
-import { Role } from '../entities/user.entity';
-import { UsersService } from 'src/users/users.service';
+import { Role } from '../../entities/user.entity';
+import { UsersService } from 'src/modules/users/users.service';
 
 @Injectable()
 export class ItemsService {

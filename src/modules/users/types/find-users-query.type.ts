@@ -1,6 +1,6 @@
 import { IsOptional, IsEmail, IsString, IsEnum, IsInt } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
-import { Role } from '../../entities/user.entity';
+import { Role } from '../../../entities/user.entity';
 
 export type FindUsersQuery = {
   // @Transform(({ value }) => value.toLowerCase().trim())
