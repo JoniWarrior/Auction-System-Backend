@@ -11,14 +11,18 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { ConfigModul } from './dynamic-modules/Config.module';
 import { DBModule } from './dynamic-modules/DB.module';
 
-
-
 @Module({
   imports: [
     ScheduleModule.forRoot(),
     ConfigModul,
     DBModule,
-    UsersModule, ItemsModule, BiddingsModule, AuctionsModule, AuthModule, NotificationsModule],
+    UsersModule,
+    ItemsModule,
+    BiddingsModule,
+    AuctionsModule,
+    AuthModule,
+    NotificationsModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })

@@ -10,7 +10,7 @@ import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
-import { User } from "./../../users/entities/user.entity";
+import { User } from "../../entities/user.entity";
 
 export const ROLES_KEY = "roles";
 export const Roles = (...roles : string[]) => SetMetadata(ROLES_KEY, roles);

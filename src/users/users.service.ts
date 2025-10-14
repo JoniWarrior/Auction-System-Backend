@@ -6,12 +6,12 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, ILike, FindOptionsWhere } from 'typeorm';
-import { User, Role } from './entities/user.entity';
+import { User, Role } from '../entities/user.entity';
 import { CreateUser } from './types/create-user.type';
 import { UpdateUser } from './types/update-user.type';
 import { NotFoundException } from '@nestjs/common';
-import { Item } from './../items/entities/item.entity';
-import { Bidding } from './../biddings/entities/bidding.entity';
+import { Item } from '../entities/item.entity';
+import { Bidding } from '../entities/bidding.entity';
 import { FindUsersQuery } from './types/find-users-query.type';
 import { ItemsService } from './../items/items.service';
 import { BiddingsService } from './../biddings/biddings.service';

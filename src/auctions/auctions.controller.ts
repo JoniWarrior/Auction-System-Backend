@@ -22,7 +22,7 @@ import { Roles, RolesGuard } from './../auth/guards/roles.guards';
 import { type FindAuctionsFilter } from './types/auctions-filter.type';
 import { ValidationPipe } from 'src/pipes/joi-validator.pipe';
 import Joi from 'joi';
-import { STATUS } from './entities/auction.entity';
+import { STATUS } from '../entities/auction.entity';
 
 @Controller('auctions')
 export class AuctionsController {

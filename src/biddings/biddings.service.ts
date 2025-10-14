@@ -8,10 +8,10 @@ import {
 import { CreateBidding } from './types/create-bidding.type';
 import { UpdateBidding } from './types/update-bidding.type';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Bidding } from './entities/bidding.entity';
+import { Bidding } from '../entities/bidding.entity';
 import { Repository } from 'typeorm';
-import { Auction, STATUS } from './../auctions/entities/auction.entity';
-import { Role } from './../users/entities/user.entity';
+import { Auction, STATUS } from '../entities/auction.entity';
+import { Role } from '../entities/user.entity';
 import { AuctionsService } from './../auctions/auctions.service';
 import { BiddingsGateway } from './biddings-gateway';
 import { UsersService } from './../users/users.service';

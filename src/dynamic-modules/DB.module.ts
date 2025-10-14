@@ -1,8 +1,8 @@
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Auction } from 'src/auctions/entities/auction.entity';
-import { Bidding } from 'src/biddings/entities/bidding.entity';
-import { Item } from 'src/items/entities/item.entity';
-import { User } from 'src/users/entities/user.entity';
+import { Auction } from 'src/entities/auction.entity';
+import { Bidding } from 'src/entities/bidding.entity';
+import { Item } from 'src/entities/item.entity';
+import { User } from 'src/entities/user.entity';
 import { Notification } from 'src/notifications/notifications-entity';
 
 export const DBModule = TypeOrmModule.forRoot({

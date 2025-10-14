@@ -15,7 +15,7 @@ import { type CreateUser } from './types/create-user.type';
 import { type UpdateUser } from './types/update-user.type';
 import { type FindUsersQuery } from './types/find-users-query.type';
 import Joi from 'joi';
-import { Role } from './entities/user.entity';
+import { Role } from '../entities/user.entity';
 import { ValidationPipe } from 'src/pipes/joi-validator.pipe';
 
 @Controller('users')

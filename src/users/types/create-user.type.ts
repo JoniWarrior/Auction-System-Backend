@@ -1,4 +1,4 @@
-import { Role } from '../entities/user.entity';
+import { Role } from '../../entities/user.entity';
 export type CreateUser = {
   name: string;
   email: string;

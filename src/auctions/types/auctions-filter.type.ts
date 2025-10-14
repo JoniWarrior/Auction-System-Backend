@@ -1,5 +1,5 @@
 import { IsEnum, IsInt, IsOptional } from "class-validator";
-import { STATUS } from "../entities/auction.entity";
+import { STATUS } from "../../entities/auction.entity";
 import { Type } from "class-transformer";
 
 export type FindAuctionsFilter = {
