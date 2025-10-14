@@ -1,7 +1,4 @@
 import {
-  BadRequestException,
-  forwardRef,
-  Inject,
   Injectable,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -10,25 +7,16 @@ import { User, Role } from '../../entities/user.entity';
 import { CreateUser } from './types/create-user.type';
 import { UpdateUser } from './types/update-user.type';
 import { NotFoundException } from '@nestjs/common';
-import { Item } from '../../entities/item.entity';
-import { Bidding } from '../../entities/bidding.entity';
 import { FindUsersQuery } from './types/find-users-query.type';
-import { ItemsService } from '../items/items.service';
-import { BiddingsService } from '../biddings/biddings.service';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User)
     private usersRepository: Repository<User>,
-
-    @Inject(forwardRef(() => ItemsService))
-    private itemsService: ItemsService,
-    @Inject(forwardRef(() => BiddingsService))
-    private biddingsService: BiddingsService,
   ) {}
 
-  private async getUser(id: string): Promise<User> {
+  async getUser(id: string): Promise<User> {
     const user = await this.usersRepository.findOne({ where: { id } });
     if (!user) throw new NotFoundException(`User with Id: ${id} not found!`);
     return user;
@@ -70,22 +58,6 @@ export class UsersService {
     const user = await this.getUser(id);
     await this.usersRepository.remove(user);
     return user;
-  }
-
-  async findSellerItems(id: string): Promise<Item[]> {
-    const user = await this.getUser(id);
-    if (user.role !== Role.SELLER)
-      throw new BadRequestException(
-        `The user with Id: ${id} is not registered as a seller!`,
-      );
-    return this.itemsService.findBySeller(id);
-  }
-
-  async findBidderBids(id: string): Promise<Bidding[]> {
-    const user = await this.getUser(id);
-    if (user.role !== Role.BIDDER)
-      throw new BadRequestException(`User with Id : ${id} is not a bidder`);
-    return this.biddingsService.findBidsByBider(user.id);
   }
 
   async findAll(filters: FindUsersQuery): Promise<User[]> {

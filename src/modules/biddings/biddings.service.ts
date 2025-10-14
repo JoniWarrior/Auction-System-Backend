@@ -3,7 +3,6 @@ import {
   NotFoundException,
   BadRequestException,
   Inject,
-  forwardRef,
 } from '@nestjs/common';
 import { CreateBidding } from './types/create-bidding.type';
 import { UpdateBidding } from './types/update-bidding.type';
@@ -15,21 +14,19 @@ import { Role } from '../../entities/user.entity';
 import { AuctionsService } from '../auctions/auctions.service';
 import { BiddingsGateway } from './biddings-gateway';
 import { UsersService } from '../users/users.service';
+import { AuctionBiddingHelperService } from '../shared/auction-bidding-helper.service';
 
 @Injectable()
 export class BiddingsService {
   constructor(
     @InjectRepository(Bidding)
     private biddingsRepository: Repository<Bidding>,
-
-    @Inject(forwardRef(() => UsersService))
     private usersService: UsersService,
- 
-    @Inject(forwardRef(() => AuctionsService))
     private auctionsService: AuctionsService,
 
     @Inject()
     private readonly biddingsGateway: BiddingsGateway,
+    private readonly helperService: AuctionBiddingHelperService,
   ) {}
 
   private getHighestBid(auction: Auction): number {
@@ -50,7 +47,7 @@ export class BiddingsService {
     const { auctionId, bidderId, amount } = createBidding;
 
     const auction =
-      await this.auctionsService.validateAuctionForBidding(auctionId);
+      await this.helperService.validateAuctionForBidding(auctionId);
     const user = await this.usersService.findOne(bidderId);
     if (user.role !== Role.BIDDER)
       throw new BadRequestException(`User with Id ${bidderId} is not a bidder`);
@@ -113,10 +110,14 @@ export class BiddingsService {
     return bidding;
   }
 
-  async update(
-    id: string,
-    updateBidding: UpdateBidding,
-  ): Promise<Bidding> {
+  async findBidderBids(id: string): Promise<Bidding[]> {
+    const user = await this.usersService.getUser(id);
+    if (user.role !== Role.BIDDER)
+      throw new BadRequestException(`User with Id : ${id} is not a bidder`);
+    return this.findBidsByBider(user.id);
+  }
+
+  async update(id: string, updateBidding: UpdateBidding): Promise<Bidding> {
     const bidding = await this.findOne(id);
     const updatedBidding = this.biddingsRepository.merge(
       bidding,

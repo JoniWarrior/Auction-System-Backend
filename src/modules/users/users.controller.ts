@@ -93,13 +93,13 @@ export class UsersController {
     return this.usersService.remove(id);
   }
 
-  @Get(':id/items')
-  findSellerItems(@Param('id') id: string) {
-    return this.usersService.findSellerItems(id);
-  }
+  // @Get(':id/items')
+  // findSellerItems(@Param('id') id: string) {
+  //   return this.usersService.findSellerItems(id);
+  // }\
 
-  @Get(':id/biddings')
-  findBidderBids(@Param('id') id: string) {
-    return this.usersService.findBidderBids(id);
-  }
+  // @Get(':id/biddings')
+  // findBidderBids(@Param('id') id: string) {
+  //   return this.usersService.findBidderBids(id);
+  // }
 }

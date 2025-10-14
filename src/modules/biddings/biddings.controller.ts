@@ -7,15 +7,10 @@ import {
   Param,
   Delete,
   UseGuards,
-  Query,
 } from '@nestjs/common';
 import { BiddingsService } from './biddings.service';
-import {
-  type CreateBidding,
-} from './types/create-bidding.type';
-import {
-  type UpdateBidding,
-} from './types/update-bidding.type';
+import { type CreateBidding } from './types/create-bidding.type';
+import { type UpdateBidding } from './types/update-bidding.type';
 import { JwtAuthGuard } from '../../auth/guards/auth.guards';
 import { Roles, RolesGuard } from '../../auth/guards/roles.guards';
 import Joi from 'joi';
@@ -47,6 +42,11 @@ export class BiddingsController {
   @Get()
   findAll() {
     return this.biddingsService.findAll();
+  }
+
+  @Get(':id/biddings')
+  findBidderBids(@Param('id') id: string) {
+    return this.biddingsService.findBidderBids(id);
   }
 
   @Get(':id')

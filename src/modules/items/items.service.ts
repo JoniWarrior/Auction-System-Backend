@@ -1,7 +1,5 @@
 import {
   BadRequestException,
-  forwardRef,
-  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -20,14 +18,13 @@ export class ItemsService {
   constructor(
     @InjectRepository(Item)
     private itemsRepository: Repository<Item>,
-
-    @Inject(forwardRef(() => UsersService))
     private usersService: UsersService,
   ) {}
 
   private async findAndValidateSeller(sellerId: string): Promise<User> {
     const seller = await this.usersService.findOne(sellerId);
-    if (!seller) throw new NotFoundException(`User Id ${sellerId} not found`);
+    if (!seller)
+      throw new NotFoundException(`User with Id ${sellerId} not found`);
     if (seller.role !== Role.SELLER)
       throw new BadRequestException(`User with Id ${sellerId} is not a seller`);
     return seller;
@@ -121,5 +118,14 @@ export class ItemsService {
 
     if (myEmptyItems.length === 0) return [];
     return myEmptyItems;
+  }
+
+  async findSellerItems(id: string): Promise<Item[]> {
+    const user = await this.usersService.getUser(id);
+    if (user.role !== Role.SELLER)
+      throw new BadRequestException(
+        `The user with Id: ${id} is not registered as a seller!`,
+      );
+    return this.findBySeller(id);
   }
 }

@@ -37,6 +37,11 @@ export class ItemsController {
     return this.itemsService.findMyItemsWithoutAuction(user.id);
   }
 
+  @Get(':id/items')
+  findSellerItems(@Param('id') id: string) {
+    return this.itemsService.findSellerItems(id);
+  }
+  
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.itemsService.findOne(id);
