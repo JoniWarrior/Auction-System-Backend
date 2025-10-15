@@ -19,7 +19,9 @@ import { type FindAuctionsFilter } from './types/auctions-filter.type';
 import { ValidationPipe } from 'src/pipes/joi-validator.pipe';
 import Joi from 'joi';
 import { STATUS } from 'src/entities/auction.entity';
+import { CurrentLoggedInUser } from 'src/decorators/current-user.decorator';
 
+@UseGuards(JwtAuthGuard)
 @Controller('auctions')
 export class AuctionsController {
   constructor(private readonly auctionsService: AuctionsService) {}
@@ -46,10 +48,8 @@ export class AuctionsController {
   @Roles('seller')
   @UseGuards(RolesGuard)
   @Get('/my-auctions-as-seller')
-  findMyAuctions(@Req() req: Request) {
-    const user = req['user'];
-    console.log('User from Req Body: ', user);
-    return this.auctionsService.findMyAuctionsAsSeller(user.id);
+  findMyAuctions(@CurrentLoggedInUser("id") userId : string) {
+    return this.auctionsService.findMyAuctionsAsSeller(userId);
   }
 
   @UseGuards(JwtAuthGuard)

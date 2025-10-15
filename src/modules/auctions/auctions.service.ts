@@ -1,15 +1,10 @@
-import {
-  Injectable,
-  NotFoundException,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Not, Repository, LessThan, FindOptionsWhere } from 'typeorm';
 import { CreateAuction } from './types/create-auction.type';
 import { Auction, STATUS } from '../../entities/auction.entity';
 import { Bidding } from '../../entities/bidding.entity';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { ItemsService } from 'src/modules/items/items.service';
 import { FindAuctionsFilter } from './types/auctions-filter.type';
 import { AuctionBiddingHelperService } from '../shared/auction-bidding-helper.service';
 
@@ -20,7 +15,6 @@ export class AuctionsService {
   constructor(
     @InjectRepository(Auction)
     private auctionsRepository: Repository<Auction>,
-    private itemsService: ItemsService,
     private helperService: AuctionBiddingHelperService,
   ) {}
 
@@ -46,17 +40,16 @@ export class AuctionsService {
   }
 
   async create(createAuction: CreateAuction): Promise<Auction> {
-    const item = await this.itemsService.findOne(createAuction.itemId);
-    const { starting_price, end_time } = createAuction;
+    const { starting_price, end_time, itemId } = createAuction;
+
     const auction = this.auctionsRepository.create({
       starting_price,
       end_time,
       current_price: starting_price,
-      item,
+      item: { id: itemId },
     });
-    const savedAuction = await this.auctionsRepository.save(auction);
-    savedAuction.item = item;
-    return savedAuction;
+
+    return this.auctionsRepository.save(auction);
   }
 
   async findAll(filters: FindAuctionsFilter): Promise<Auction[]> {

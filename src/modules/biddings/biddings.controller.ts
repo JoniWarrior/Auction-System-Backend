@@ -7,6 +7,7 @@ import {
   Param,
   Delete,
   UseGuards,
+  Req,
 } from '@nestjs/common';
 import { BiddingsService } from './biddings.service';
 import { type CreateBidding } from './types/create-bidding.type';
@@ -35,8 +36,10 @@ export class BiddingsController {
       ),
     )
     createBidding: CreateBidding,
+    @Req() req: Request,
   ) {
-    return this.biddingsService.create(createBidding);
+    const bidderId = req["user"].id;
+    return this.biddingsService.create(createBidding, bidderId);
   }
 
   @Get()
@@ -44,10 +47,12 @@ export class BiddingsController {
     return this.biddingsService.findAll();
   }
 
-  @Get(':id/biddings')
-  findBidderBids(@Param('id') id: string) {
-    return this.biddingsService.findBidderBids(id);
-  }
+  // Version 2
+  @Get('/my-biddings')
+  findMyBiddings(@Req() req: Request) {
+    const bidderId = req['user'].id;
+    return this.biddingsService.findMyBiddings(bidderId);
+  } // endpoint not used in front
 
   @Get(':id')
   findOne(@Param('id') id: string) {

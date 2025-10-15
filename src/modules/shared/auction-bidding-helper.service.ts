@@ -1,6 +1,7 @@
 import {
   BadRequestException,
-  Injectable
+  Injectable,
+  NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Auction, STATUS } from 'src/entities/auction.entity';
@@ -40,6 +41,32 @@ export class AuctionBiddingHelperService {
       where: { auction: { id: auctionId } },
       relations: ['bidder'],
       order: { amount: 'DESC' },
+    });
+  }
+
+  async updateAuction(
+    auction: Auction,
+    { amount, isFirstBid }: { amount: number; isFirstBid: boolean },
+  ): Promise<Auction> {
+    const existingAuction = await this.auctionsRepository.findOne({
+      where: { id: auction.id },
+      relations: ['item', 'biddings'],
+    });
+
+    if (!existingAuction) {
+      throw new NotFoundException(`Auction with ID ${auction.id} not found`);
+    }
+
+    existingAuction.current_price = amount;
+    if (isFirstBid && existingAuction.status !== STATUS.ACTIVE) {
+      existingAuction.status = STATUS.ACTIVE;
+    }
+
+    const savedAuction = await this.auctionsRepository.save(existingAuction);
+
+    return this.auctionsRepository.findOneOrFail({
+      where: { id: savedAuction.id },
+      relations: ['item', 'biddings'],
     });
   }
 }

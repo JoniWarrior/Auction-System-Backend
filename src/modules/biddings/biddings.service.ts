@@ -9,20 +9,19 @@ import { UpdateBidding } from './types/update-bidding.type';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Bidding } from '../../entities/bidding.entity';
 import { Repository } from 'typeorm';
-import { Auction, STATUS } from '../../entities/auction.entity';
-import { Role } from '../../entities/user.entity';
-import { AuctionsService } from '../auctions/auctions.service';
+import { Auction } from '../../entities/auction.entity';
 import { BiddingsGateway } from './biddings-gateway';
-import { UsersService } from '../users/users.service';
 import { AuctionBiddingHelperService } from '../shared/auction-bidding-helper.service';
+import { User } from 'src/entities/user.entity';
 
 @Injectable()
 export class BiddingsService {
   constructor(
     @InjectRepository(Bidding)
     private biddingsRepository: Repository<Bidding>,
-    private usersService: UsersService,
-    private auctionsService: AuctionsService,
+
+    @InjectRepository(User)
+    private usersRepository: Repository<User>,
 
     @Inject()
     private readonly biddingsGateway: BiddingsGateway,
@@ -35,61 +34,61 @@ export class BiddingsService {
       : auction.starting_price;
   }
 
-  private async saveAndLoadBidding(bidding: Bidding): Promise<Bidding> {
-    const saved = await this.biddingsRepository.save(bidding);
-    return this.biddingsRepository.findOneOrFail({
-      where: { id: saved.id },
-      relations: ['auction', 'bidder', 'auction.item'],
-    });
+  // Version 2 : 
+  async create(
+  createBidding: CreateBidding,
+  bidderId: string,
+): Promise<Bidding> {
+  const { auctionId, amount } = createBidding;
+
+  const auction = await this.helperService.validateAuctionForBidding(auctionId);
+  const bidder = await this.usersRepository.findOne({ where: { id: bidderId } });
+
+  if (!bidder) {
+    throw new NotFoundException(`User (bidder) with ID ${bidderId} not found`);
   }
-
-  async create(createBidding: CreateBidding): Promise<Bidding> {
-    const { auctionId, bidderId, amount } = createBidding;
-
-    const auction =
-      await this.helperService.validateAuctionForBidding(auctionId);
-    const user = await this.usersService.findOne(bidderId);
-    if (user.role !== Role.BIDDER)
-      throw new BadRequestException(`User with Id ${bidderId} is not a bidder`);
-    const currentHighestBid = this.getHighestBid(auction);
-
-    if (amount <= currentHighestBid)
-      throw new BadRequestException(
-        `Bid amount must be higher than $${currentHighestBid}`,
-      );
-
-    const isFirstBid = (auction.biddings?.length ?? 0) === 0;
-    const bidding = this.biddingsRepository.create({
-      amount: amount,
-      auction: { id: auction.id },
-      bidder: { id: user.id },
-    });
-
-    const fullBid = await this.saveAndLoadBidding(bidding);
-    await this.auctionsService.update(auction.id, {
-      current_price: amount,
-      ...(isFirstBid && { status: STATUS.ACTIVE }),
-    });
-
-    this.biddingsGateway.broadcastNewBid(auction.id, fullBid);
-
-    // Version 1:
-    // this.biddingsGateway.broadcastOutBid(auction.id, fullBid, bidderId);
-
-    const pastBidders = auction.biddings
-      .map((b) => b.bidder.id)
-      .filter((id) => id !== bidderId); // exlcude current bider
-
-    const uniquePastBidders = [...new Set(pastBidders)];
-
-    await this.biddingsGateway.broadcastOutBid(
-      auction.id,
-      fullBid,
-      uniquePastBidders,
+  const currentHighestBid = this.getHighestBid(auction);
+  if (amount <= currentHighestBid) {
+    throw new BadRequestException(
+      `Bid amount must be higher than $${currentHighestBid}`,
     );
-
-    return fullBid;
   }
+
+  const isFirstBid = (auction.biddings?.length ?? 0) === 0;
+  const updatedAuction = await this.helperService.updateAuction(auction, {
+    amount,
+    isFirstBid,
+  });
+
+  const bidding = this.biddingsRepository.create({
+    amount,
+    auction: { id: updatedAuction.id },
+    bidder: { id: bidder.id },
+  });
+
+  const savedBid = await this.biddingsRepository.save(bidding);
+  const fullBid = await this.biddingsRepository.findOne({
+    where: { id: savedBid.id },
+    relations: ['auction', 'bidder', 'auction.item'],
+  });
+
+  if (!fullBid) throw new BadRequestException("Not exist!");
+  this.biddingsGateway.broadcastNewBid(updatedAuction.id, fullBid);
+
+  const pastBidders = auction.biddings
+    .map((b) => b.bidder.id)
+    .filter((id) => id !== bidderId);
+
+  const uniquePastBidders = [...new Set(pastBidders)];
+
+  await this.biddingsGateway.broadcastOutBid(
+    updatedAuction.id,
+    fullBid,
+    uniquePastBidders,
+  );
+
+  return fullBid;
+}
 
   async findAll(): Promise<Bidding[]> {
     const biddings = await this.biddingsRepository.find({
@@ -110,12 +109,9 @@ export class BiddingsService {
     return bidding;
   }
 
-  async findBidderBids(id: string): Promise<Bidding[]> {
-    const user = await this.usersService.getUser(id);
-    if (user.role !== Role.BIDDER)
-      throw new BadRequestException(`User with Id : ${id} is not a bidder`);
-    return this.findBidsByBider(user.id);
-  }
+  async findMyBiddings(id: string): Promise<Bidding[]> {
+    return this.findBidsByBider(id);
+  } // endpoint not used in front
 
   async update(id: string, updateBidding: UpdateBidding): Promise<Bidding> {
     const bidding = await this.findOne(id);

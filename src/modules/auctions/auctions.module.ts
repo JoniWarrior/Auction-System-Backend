@@ -14,7 +14,7 @@ import { SharedModule } from '../shared/shared.module';
     TypeOrmModule.forFeature([Auction, Item, Bidding]),
     JwtAuthModule,
     ItemsModule,
-    SharedModule
+    SharedModule,
   ],
   controllers: [AuctionsController],
   providers: [AuctionsService],

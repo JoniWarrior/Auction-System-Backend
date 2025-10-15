@@ -7,28 +7,15 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { CreateItem } from './types/create-item.type';
 import { UpdateItem } from './types/update-item.type';
 import { Item } from '../../entities/item.entity';
-import { User } from '../../entities/user.entity';
 import { Repository } from 'typeorm';
 import { v2 as cloudinary } from 'cloudinary';
-import { Role } from '../../entities/user.entity';
-import { UsersService } from 'src/modules/users/users.service';
 
 @Injectable()
 export class ItemsService {
   constructor(
     @InjectRepository(Item)
     private itemsRepository: Repository<Item>,
-    private usersService: UsersService,
   ) {}
-
-  private async findAndValidateSeller(sellerId: string): Promise<User> {
-    const seller = await this.usersService.findOne(sellerId);
-    if (!seller)
-      throw new NotFoundException(`User with Id ${sellerId} not found`);
-    if (seller.role !== Role.SELLER)
-      throw new BadRequestException(`User with Id ${sellerId} is not a seller`);
-    return seller;
-  }
 
   private async uploadToCloudinary(file: Express.Multer.File): Promise<string> {
     if (!file) throw new BadRequestException('Image is required!');
@@ -50,15 +37,15 @@ export class ItemsService {
   async create(
     createItem: CreateItem,
     file: Express.Multer.File,
+    sellerId: string,
   ): Promise<Item> {
     try {
-      const seller = await this.findAndValidateSeller(createItem.sellerId);
       const imageURL = await this.uploadToCloudinary(file);
       const item = this.itemsRepository.create({
         title: createItem.title,
         description: createItem.description,
         imageURL,
-        seller,
+        seller: { id: sellerId },
       });
       const savedItem = await this.itemsRepository.save(item);
       return savedItem;
@@ -120,12 +107,12 @@ export class ItemsService {
     return myEmptyItems;
   }
 
-  async findSellerItems(id: string): Promise<Item[]> {
-    const user = await this.usersService.getUser(id);
-    if (user.role !== Role.SELLER)
-      throw new BadRequestException(
-        `The user with Id: ${id} is not registered as a seller!`,
-      );
-    return this.findBySeller(id);
-  }
+  // async findSellerItems(id: string): Promise<Item[]> {
+  //   const user = await this.usersService.getUser(id);
+  //   if (user.role !== Role.SELLER)
+  //     throw new BadRequestException(
+  //       `The user with Id: ${id} is not registered as a seller!`,
+  //     );
+  //   return this.findBySeller(id);
+  // } // Not needed
 }
