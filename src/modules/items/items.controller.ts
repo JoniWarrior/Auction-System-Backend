@@ -9,7 +9,6 @@ import {
   UseGuards,
   UseInterceptors,
   UploadedFile,
-  Req,
 } from '@nestjs/common';
 import { ItemsService } from './items.service';
 import { type CreateItem } from './types/create-item.type';
@@ -20,6 +19,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import * as multer from 'multer';
 import { ValidationPipe } from 'src/pipes/joi-validator.pipe';
 import Joi from 'joi';
+import { CurrentLoggedInUser } from 'src/decorators/current-user.decorator';
 
 @Controller('items')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -43,9 +43,8 @@ export class ItemsController {
     )
     createItem: CreateItem,
     @UploadedFile() file: Express.Multer.File,
-    @Req() req: Request,
+    @CurrentLoggedInUser('id') sellerId: string,
   ) {
-    const sellerId = req['user'].id;
     return this.itemsService.create(createItem, file, sellerId);
   }
 
@@ -55,10 +54,8 @@ export class ItemsController {
   }
 
   @Get('/my-empty-items')
-  findMyEmptyItems(@Req() req: Request) {
-    const id = req['user'].id;
-    const user = req['user'];
-    return this.itemsService.findMyItemsWithoutAuction(user.id);
+  findMyEmptyItems(@CurrentLoggedInUser('id') sellerId: string) {
+    return this.itemsService.findMyItemsWithoutAuction(sellerId);
   }
 
   // @Get(':id/items')

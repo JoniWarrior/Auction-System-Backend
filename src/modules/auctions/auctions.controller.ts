@@ -8,7 +8,6 @@ import {
   Delete,
   Query,
   UseGuards,
-  Req,
 } from '@nestjs/common';
 import { AuctionsService } from './auctions.service';
 import { type CreateAuction } from './types/create-auction.type';
@@ -48,16 +47,14 @@ export class AuctionsController {
   @Roles('seller')
   @UseGuards(RolesGuard)
   @Get('/my-auctions-as-seller')
-  findMyAuctions(@CurrentLoggedInUser("id") userId : string) {
-    return this.auctionsService.findMyAuctionsAsSeller(userId);
+  findMyAuctions(@CurrentLoggedInUser('id') sellerId: string) {
+    return this.auctionsService.findMyAuctionsAsSeller(sellerId);
   }
-
+  
   @UseGuards(JwtAuthGuard)
   @Get('/my-auctions-as-bidder')
-  findMyAuctionsAsBidder(@Req() req: Request) {
-    const bidder = req['user'];
-    console.log('User from Req Body: ', bidder);
-    return this.auctionsService.findMyAuctionsAsBidder(bidder.id);
+  findMyAuctionsAsBidder(@CurrentLoggedInUser('id') bidderId: string) {
+    return this.auctionsService.findMyAuctionsAsBidder(bidderId);
   }
 
   @Get()

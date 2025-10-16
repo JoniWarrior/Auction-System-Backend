@@ -7,7 +7,6 @@ import {
   Param,
   Delete,
   UseGuards,
-  Req,
 } from '@nestjs/common';
 import { BiddingsService } from './biddings.service';
 import { type CreateBidding } from './types/create-bidding.type';
@@ -16,6 +15,7 @@ import { JwtAuthGuard } from '../../auth/guards/auth.guards';
 import { Roles, RolesGuard } from '../../auth/guards/roles.guards';
 import Joi from 'joi';
 import { ValidationPipe } from 'src/pipes/joi-validator.pipe';
+import { CurrentLoggedInUser } from 'src/decorators/current-user.decorator';
 
 @Controller('biddings')
 @UseGuards(JwtAuthGuard)
@@ -36,9 +36,8 @@ export class BiddingsController {
       ),
     )
     createBidding: CreateBidding,
-    @Req() req: Request,
+    @CurrentLoggedInUser('id') bidderId: string,
   ) {
-    const bidderId = req["user"].id;
     return this.biddingsService.create(createBidding, bidderId);
   }
 
@@ -47,10 +46,8 @@ export class BiddingsController {
     return this.biddingsService.findAll();
   }
 
-  // Version 2
   @Get('/my-biddings')
-  findMyBiddings(@Req() req: Request) {
-    const bidderId = req['user'].id;
+  findMyBiddings(@CurrentLoggedInUser('id') bidderId: string) {
     return this.biddingsService.findMyBiddings(bidderId);
   } // endpoint not used in front
 
