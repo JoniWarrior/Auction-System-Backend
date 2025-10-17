@@ -7,7 +7,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { CreateItem } from './types/create-item.type';
 import { UpdateItem } from './types/update-item.type';
 import { Item } from '../../entities/item.entity';
-import { Repository } from 'typeorm';
+import { IsNull, Repository } from 'typeorm';
 import { v2 as cloudinary } from 'cloudinary';
 
 @Injectable()
@@ -95,17 +95,18 @@ export class ItemsService {
   }
 
   async findMyItemsWithoutAuction(userId: string): Promise<Item[]> {
-    const myEmptyItems = await this.itemsRepository
-      .createQueryBuilder('item')
-      .leftJoinAndSelect('item.seller', 'seller')
-      .leftJoinAndSelect('item.auction', 'auction')
-      .where('seller.id = :userId', { userId })
-      .andWhere('auction IS NULL')
-      .getMany();
+  const empty_items = await this.itemsRepository.find({
+    where: {
+      seller: { id: userId },
+      auction: { id : IsNull()},
+    },
+    relations: ['seller', 'auction'],
+  });
+  console.log("Empty Items", empty_items);
+  return empty_items;
+}
 
-    if (myEmptyItems.length === 0) return [];
-    return myEmptyItems;
-  }
+
 
   // async findSellerItems(id: string): Promise<Item[]> {
   //   const user = await this.usersService.getUser(id);

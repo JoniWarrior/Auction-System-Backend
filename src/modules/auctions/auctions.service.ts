@@ -80,29 +80,26 @@ export class AuctionsService {
     return auctions;
   }
 
-  async findMyAuctionsAsSeller(userId: string): Promise<Auction[]> {
-    const auctions = await this.auctionsRepository
-      .createQueryBuilder('auction')
-      .leftJoinAndSelect('auction.item', 'item')
-      .leftJoinAndSelect('item.seller', 'seller')
-      .leftJoinAndSelect('auction.biddings', 'biddings')
-      .where('seller.id = :userId', { userId })
-      .getMany();
-    return auctions;
+  async findMyAuctionsAsSeller(sellerId: string): Promise<Auction[]> {
+    return this.auctionsRepository.find({
+      where: {
+        item: {
+          seller: { id: sellerId },
+        },
+      },
+      relations: ['item', 'item.seller', 'biddings'],
+    });
   }
 
   async findMyAuctionsAsBidder(bidderId: string): Promise<Auction[]> {
-    const auctions = await this.auctionsRepository
-      .createQueryBuilder('auction')
-      .leftJoinAndSelect('auction.item', 'item')
-      .leftJoinAndSelect('item.seller', 'seller')
-      .leftJoinAndSelect('auction.biddings', 'biddings')
-      .leftJoinAndSelect('auction.winningBid', 'winningBid')
-      .where('biddings.bidder_id = :bidderId', { bidderId })
-      .getMany();
-    return auctions;
+    return this.auctionsRepository.find({
+      where: {
+        biddings: { bidder: { id: bidderId } },
+      },
+      relations: ['item', 'item.seller', 'biddings', 'winningBid'],
+    });
   }
-
+  
   async findOne(id: string): Promise<Auction> {
     const auction = await this.getAuction(id, [
       'item',

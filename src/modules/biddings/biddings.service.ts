@@ -136,24 +136,12 @@ export class BiddingsService {
     });
   }
 
-  async findBidsByBider(userId: string): Promise<Bidding[]> {
-    return this.biddingsRepository
-      .createQueryBuilder('bidding')
-      .leftJoinAndSelect('bidding.auction', 'auction')
-      .leftJoinAndSelect('auction.item', 'item')
-      .select([
-        'bidding.id',
-        'bidding.amount',
-        'bidding.created_at',
-        'auction.id',
-        'auction.starting_price',
-        'auction.current_price',
-        'auction.end_time',
-        'auction.status',
-        'item.title',
-        'item.description',
-      ])
-      .where('bidding.bidder_id = :bidderId', { bidderId: userId })
-      .getMany();
+
+  async findBidsByBider(bidderId : string) : Promise<Bidding[]> {
+    return this.biddingsRepository.find({where : {
+      bidder : {id : bidderId}
+    }, 
+    relations : ["auction", "auction.item", ""]})
   }
+  
 }
