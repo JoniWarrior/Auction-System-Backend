@@ -6,7 +6,7 @@ import {
   OneToMany,
 } from 'typeorm';
 import { Item } from './item.entity';
-import { Bidding } from 'src/entities/bidding.entity';
+import { Bidding } from './bidding.entity';
 
 export enum Role {
   BIDDER = 'bidder',

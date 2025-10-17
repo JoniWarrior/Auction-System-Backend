@@ -13,5 +13,5 @@ export const DBModule = TypeOrmModule.forRoot({
   password: process.env.DB_PASS,
   database: process.env.DB_NAME,
   entities: [User, Item, Bidding, Auction, Notification],
-  synchronize: true,
+  synchronize: false,
 });

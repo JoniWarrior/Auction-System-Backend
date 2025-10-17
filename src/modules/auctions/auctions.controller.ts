@@ -20,13 +20,12 @@ import Joi from 'joi';
 import { STATUS } from 'src/entities/auction.entity';
 import { CurrentLoggedInUser } from 'src/decorators/current-user.decorator';
 
-@UseGuards(JwtAuthGuard)
 @Controller('auctions')
 export class AuctionsController {
   constructor(private readonly auctionsService: AuctionsService) {}
 
   @Roles('seller')
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Post()
   create(
     @Body(
@@ -50,7 +49,7 @@ export class AuctionsController {
   findMyAuctions(@CurrentLoggedInUser('id') sellerId: string) {
     return this.auctionsService.findMyAuctionsAsSeller(sellerId);
   }
-  
+
   @UseGuards(JwtAuthGuard)
   @Get('/my-auctions-as-bidder')
   findMyAuctionsAsBidder(@CurrentLoggedInUser('id') bidderId: string) {
@@ -79,6 +78,7 @@ export class AuctionsController {
     return this.auctionsService.findOne(id);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Patch(':id')
   update(
     @Param('id') id: string,
@@ -96,11 +96,13 @@ export class AuctionsController {
     return this.auctionsService.update(id, updateAuction);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.auctionsService.remove(id);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get('/:auctionId/biddings')
   findBiddingsOfAuction(@Param('auctionId') auctionId: string) {
     return this.auctionsService.findBiddingsOfAuction(auctionId);
@@ -111,6 +113,7 @@ export class AuctionsController {
   //   return await this.auctionsService.getAuctionWinner(id);
   // }
 
+  @UseGuards(JwtAuthGuard)
   @Post(':id/close')
   async closeAuction(@Param('id') id: string) {
     return await this.auctionsService.closeAuction(id);
