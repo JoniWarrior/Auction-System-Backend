@@ -39,6 +39,7 @@ export class ErrorResponseNormalizerFilter
     if (exception instanceof ValidationError) {
       const response = normalizeResponse({
         _message: exception.message,
+        _timestamp : new Date().toISOString(),
         _errors: exception.details.map((detail) => ({
           key: detail.context?.key,
           message: detail.message,
