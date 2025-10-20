@@ -15,8 +15,8 @@ import { type CreateUser } from './types/create-user.type';
 import { type UpdateUser } from './types/update-user.type';
 import { type FindUsersQuery } from './types/find-users-query.type';
 import Joi from 'joi';
-import { Role } from '../../entities/user.entity';
 import { ValidationPipe } from 'src/pipes/joi-validator.pipe';
+import { UserRole } from '../../def/enums/user_role.enum';
 
 @Controller('users')
 @UseGuards(JwtAuthGuard)
@@ -34,7 +34,7 @@ export class UsersController {
           password: Joi.string().required().min(8),
           confirmPassword: Joi.string().required().min(8),
           role: Joi.string()
-            .valid(...Object.values(Role))
+            .valid(...Object.values(UserRole))
             .required(),
         }),
       ),
@@ -51,7 +51,7 @@ export class UsersController {
         Joi.object({
           email: Joi.string().email(),
           name: Joi.string(),
-          role: Joi.string().valid(...Object.values(Role)),
+          role: Joi.string().valid(...Object.values(UserRole)),
           limit: Joi.number(),
           page: Joi.number(),
         }),
@@ -78,7 +78,7 @@ export class UsersController {
           password: Joi.string().required().min(8),
           confirmPassword: Joi.string().required().min(8),
           role: Joi.string()
-            .valid(...Object.values(Role))
+            .valid(...Object.values(UserRole))
             .required(),
         }),
       ),

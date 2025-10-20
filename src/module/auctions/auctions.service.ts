@@ -2,11 +2,12 @@ import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Not, Repository, LessThan, FindOptionsWhere } from 'typeorm';
 import { CreateAuction } from './types/create-auction.type';
-import { Auction, STATUS } from '../../entities/auction.entity';
+import { Auction } from '../../entities/auction.entity';
 import { Bidding } from '../../entities/bidding.entity';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { FindAuctionsFilter } from './types/auctions-filter.type';
 import { AuctionBiddingHelperService } from '../shared/auction-bidding-helper.service';
+import { AuctionStatus } from '../../def/enums/auction_status.enum';
 
 @Injectable()
 export class AuctionsService {
@@ -99,7 +100,7 @@ export class AuctionsService {
       relations: ['item', 'item.seller', 'biddings', 'winningBid'],
     });
   }
-  
+
   async findOne(id: string): Promise<Auction> {
     const auction = await this.getAuction(id, [
       'item',
@@ -140,7 +141,7 @@ export class AuctionsService {
     const expiredAuctions = await this.auctionsRepository.find({
       where: {
         end_time: LessThan(now),
-        status: Not(STATUS.FINISHED),
+        status: Not(AuctionStatus.FINISHED),
       },
       relations: ['biddings', 'biddings.bidder'],
     });
@@ -160,7 +161,7 @@ export class AuctionsService {
       'item',
     ]);
 
-    if (auction.status === STATUS.FINISHED) {
+    if (auction.status === AuctionStatus.FINISHED) {
       this.logger.log(`Auction with Id: ${auction.id} has already finished`);
       return auction;
     }
@@ -177,7 +178,7 @@ export class AuctionsService {
       this.logger.log(`Auction ${auctionId} closed with no bids`);
     }
 
-    auction.status = STATUS.FINISHED;
+    auction.status = AuctionStatus.FINISHED;
     auction.current_price = winningAmount;
     return this.auctionsRepository.save(auction);
   }

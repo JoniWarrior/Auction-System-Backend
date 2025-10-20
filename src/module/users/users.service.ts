@@ -1,11 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, ILike, FindOptionsWhere } from 'typeorm';
-import { User, Role } from '../../entities/user.entity';
+import { User } from '../../entities/user.entity';
 import { CreateUser } from './types/create-user.type';
 import { UpdateUser } from './types/update-user.type';
 import { NotFoundException } from '@nestjs/common';
 import { FindUsersQuery } from './types/find-users-query.type';
+import { UserRole } from '../../def/enums/user_role.enum';
 
 @Injectable()
 export class UsersService {
@@ -23,7 +24,7 @@ export class UsersService {
   async create(createUser: CreateUser): Promise<User> {
     const user = this.usersRepository.create({
       ...createUser,
-      role: createUser.role || Role.BIDDER,
+      role: createUser.role || UserRole.BIDDER,
     });
     return this.usersRepository.save(user);
   }

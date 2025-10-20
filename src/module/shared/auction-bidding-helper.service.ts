@@ -4,9 +4,10 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Auction, STATUS } from 'src/entities/auction.entity';
+import { Auction } from 'src/entities/auction.entity';
 import { Bidding } from 'src/entities/bidding.entity';
 import { Repository } from 'typeorm';
+import { AuctionStatus } from '../../def/enums/auction_status.enum';
 
 @Injectable()
 export class AuctionBiddingHelperService {
@@ -27,7 +28,7 @@ export class AuctionBiddingHelperService {
     if (!auction) {
       throw new BadRequestException(`Auction with id ${auctionId} not found`);
     }
-    if (auction?.status === STATUS.FINISHED)
+    if (auction?.status === AuctionStatus.FINISHED)
       throw new BadRequestException('Auction has already finished');
 
     const now = new Date();
@@ -58,8 +59,8 @@ export class AuctionBiddingHelperService {
     }
 
     existingAuction.current_price = amount;
-    if (isFirstBid && existingAuction.status !== STATUS.ACTIVE) {
-      existingAuction.status = STATUS.ACTIVE;
+    if (isFirstBid && existingAuction.status !== AuctionStatus.ACTIVE) {
+      existingAuction.status = AuctionStatus.ACTIVE;
     }
 
     const savedAuction = await this.auctionsRepository.save(existingAuction);

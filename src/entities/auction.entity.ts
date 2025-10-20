@@ -10,12 +10,8 @@ import {
 } from 'typeorm';
 import { Item } from './item.entity';
 import { Bidding } from './bidding.entity';
+import { AuctionStatus } from '../def/enums/auction_status.enum';
 
-export enum STATUS {
-  ACTIVE = 'active',
-  PENDING = 'pending',
-  FINISHED = 'finished',
-}
 @Entity('auctions')
 @Index(['status', 'end_time'])
 export class Auction {
@@ -31,12 +27,8 @@ export class Auction {
   @Column()
   end_time: Date;
 
-  @Column({
-    type: 'enum',
-    enum: STATUS,
-    default: STATUS.PENDING,
-  })
-  status: STATUS;
+  @Column()
+  status: AuctionStatus;
 
   @CreateDateColumn()
   created_at: Date;

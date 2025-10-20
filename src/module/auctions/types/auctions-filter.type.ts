@@ -1,7 +1,7 @@
-import { STATUS } from "src/entities/auction.entity";
+import { AuctionStatus } from '../../../def/enums/auction_status.enum';
 
 export type FindAuctionsFilter = {
-    status?: STATUS;
+    status?: AuctionStatus;
     limit?: number
     page?: number;
 }

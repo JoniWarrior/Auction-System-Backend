@@ -7,12 +7,7 @@ import {
 } from 'typeorm';
 import { Item } from './item.entity';
 import { Bidding } from './bidding.entity';
-
-export enum Role {
-  BIDDER = 'bidder',
-  SELLER = 'seller',
-  ADMIN = 'admin',
-}
+import { UserRole } from '../def/enums/user_role.enum';
 
 @Entity()
 export class User {
@@ -30,10 +25,10 @@ export class User {
 
   @Column({
     type: 'enum',
-    enum: Role,
-    default: Role.BIDDER,
+    enum: UserRole,
+    default: UserRole.BIDDER,
   })
-  role: Role;
+  role: UserRole;
 
   @CreateDateColumn()
   created_at: Date;
