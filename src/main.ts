@@ -2,7 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { ErrorResponseNormalizerFilter } from './filter/error-response-normalizer.filter';
-import { AuditInterceptor } from 'interceptors/main.interceptor';
+import { AuditInterceptor } from 'src/interceptors/main.interceptor';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
