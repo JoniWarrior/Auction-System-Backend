@@ -8,8 +8,8 @@ import { AuctionsModule } from './modules/auctions/auctions.module';
 import { AuthModule } from './auth/auth.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { NotificationsModule } from './modules/notifications/notifications.module';
-import { ConfigModul } from './dynamic-modules/Config.module';
-import { DBModule } from './dynamic-modules/DB.module';
+import { ConfigModul } from './dynamic-modules/config';
+import { DBModule } from './dynamic-modules/db';
 
 @Module({
   imports: [
