@@ -23,9 +23,10 @@ async function bootstrap() {
     allowedHeaders: 'Content-Type, Authorization',
   });
 
-   app.useGlobalFilters(new ErrorResponseNormalizerFilter());
- 
-  await app.listen(process.env.PORT ?? 3000);
-  console.log(`Running on port ${process.env.PORT}`);
+  app.useGlobalFilters(new ErrorResponseNormalizerFilter());
+
+  const port = process.env.PORT || 3000;
+  await app.listen(port);
+  console.log(`Running on port ${port}`);
 }
 bootstrap();

@@ -4,7 +4,7 @@ import { User } from './entities/user.entity';
 import { Item } from './entities/item.entity';
 import { Auction } from './entities/auction.entity';
 import { Bidding } from './entities/bidding.entity';
-import { Notification } from './entities/notifications-entity';
+import { Notification } from './entities/notifications.entity';
 
 dotenv.config();
 
@@ -18,4 +18,4 @@ export const AppDataSource = new DataSource({
   entities: [User, Item, Notification, Auction, Bidding],
   migrations: ['src/migrations/*.ts'],
   synchronize: false,
-}); 
+});

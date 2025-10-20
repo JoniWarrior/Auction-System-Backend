@@ -6,7 +6,7 @@ import { Item } from '../../entities/item.entity';
 import { User } from '../../entities/user.entity';
 import { JwtAuthModule } from '../../auth/guards/jwt-auth.module';
 import { CloudinaryConfig } from 'cloudinary.config';
-import { UsersModule } from 'src/modules/users/users.module';
+import { UsersModule } from 'src/module/users/users.module';
 @Module({
   imports: [
     TypeOrmModule.forFeature([Item, User]),

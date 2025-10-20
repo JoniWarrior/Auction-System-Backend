@@ -1,15 +1,15 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { UsersModule } from './modules/users/users.module';
-import { ItemsModule } from './modules/items/items.module';
-import { BiddingsModule } from './modules/biddings/biddings.module';
-import { AuctionsModule } from './modules/auctions/auctions.module';
+import { UsersModule } from './module/users/users.module';
+import { ItemsModule } from './module/items/items.module';
+import { BiddingsModule } from './module/biddings/biddings.module';
+import { AuctionsModule } from './module/auctions/auctions.module';
 import { AuthModule } from './auth/auth.module';
 import { ScheduleModule } from '@nestjs/schedule';
-import { NotificationsModule } from './modules/notifications/notifications.module';
-import { ConfigModul } from './dynamic-modules/config';
-import { DBModule } from './dynamic-modules/db';
+import { NotificationsModule } from './module/notifications/notifications.module';
+import { ConfigModul } from './dynamic-module/config';
+import { DBModule } from './dynamic-module/db';
 
 @Module({
   imports: [

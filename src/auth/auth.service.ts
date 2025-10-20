@@ -1,9 +1,9 @@
 import { Injectable, BadRequestException, UnauthorizedException } from '@nestjs/common';
 import { User } from '../entities/user.entity';
-import { UsersService } from '../modules/users/users.service';
+import { UsersService } from '../module/users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from "bcrypt";
-import type { CreateUser } from '../modules/users/types/create-user.type';
+import type { CreateUser } from '../module/users/types/create-user.type';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 
@@ -25,10 +25,10 @@ export class AuthService {
         if (existingUser) {
             throw new BadRequestException("Email already exists")
         }
-        
+
         if (createUser.password !== createUser.confirmPassword) {
             throw new BadRequestException("Password Confirm does not match password");
-        }       
+        }
 
         const hashedPassword = await bcrypt.hash(createUser.password, 10);
 
@@ -45,7 +45,7 @@ export class AuthService {
             token
         };
     }
-    
+
 
 async login(email: string, password: string) {
   const existingUser = await this.usersService.findByEmail(email);

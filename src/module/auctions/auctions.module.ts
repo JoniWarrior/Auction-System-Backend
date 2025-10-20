@@ -6,7 +6,7 @@ import { Auction } from '../../entities/auction.entity';
 import { Item } from '../../entities/item.entity';
 import { Bidding } from '../../entities/bidding.entity';
 import { JwtAuthModule } from '../../auth/guards/jwt-auth.module';
-import { ItemsModule } from 'src/modules/items/items.module';
+import { ItemsModule } from 'src/module/items/items.module';
 import { SharedModule } from '../shared/shared.module';
 
 @Module({
