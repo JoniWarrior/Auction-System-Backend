@@ -30,5 +30,4 @@ export class InitialSchema1760653639714 implements MigrationInterface {
         await queryRunner.query(`DROP TABLE "auctions"`);
         await queryRunner.query(`DROP TABLE "biddings"`);
     }
-
 }

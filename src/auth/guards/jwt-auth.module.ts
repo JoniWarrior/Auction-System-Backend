@@ -4,7 +4,7 @@ import { JwtAuthGuard } from './auth.guards';
 import { RolesGuard } from './roles.guards';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from '../../entities/user.entity';
-import { JwtModul } from 'src/dynamic-modules/JWT.module';
+import { JwtModul } from 'src/dynamic-modules/jwt';
 
 @Module({
   imports: [
