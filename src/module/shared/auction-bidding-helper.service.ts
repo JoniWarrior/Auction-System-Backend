@@ -32,7 +32,7 @@ export class AuctionBiddingHelperService {
       throw new BadRequestException('Auction has already finished');
 
     const now = new Date();
-    if (now > auction.end_time)
+    if (now > auction.endTime)
       throw new BadRequestException('Auction has ended');
     return auction;
   }
@@ -58,7 +58,7 @@ export class AuctionBiddingHelperService {
       throw new NotFoundException(`Auction with ID ${auction.id} not found`);
     }
 
-    existingAuction.current_price = amount;
+    existingAuction.currentPrice = amount;
     if (isFirstBid && existingAuction.status !== AuctionStatus.ACTIVE) {
       existingAuction.status = AuctionStatus.ACTIVE;
     }

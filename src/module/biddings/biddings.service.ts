@@ -31,7 +31,7 @@ export class BiddingsService {
   private getHighestBid(auction: Auction): number {
     return auction.biddings.length
       ? Math.max(...auction.biddings.map((b) => b.amount))
-      : auction.starting_price;
+      : auction.startingPrice;
   }
 
   // Version 2 : 

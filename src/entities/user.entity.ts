@@ -31,7 +31,7 @@ export class User {
   role: UserRole;
 
   @CreateDateColumn()
-  created_at: Date;
+  createdAt: Date;
 
   @OneToMany(() => Item, (item) => item.seller, { onDelete: 'CASCADE' })
   items: Item[];

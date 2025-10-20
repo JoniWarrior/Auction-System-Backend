@@ -41,12 +41,12 @@ export class AuctionsService {
   }
 
   async create(createAuction: CreateAuction): Promise<Auction> {
-    const { starting_price, end_time, itemId } = createAuction;
+    const { startingPrice, endTime, itemId } = createAuction;
 
     const auction = this.auctionsRepository.create({
-      starting_price,
-      end_time,
-      current_price: starting_price,
+      startingPrice,
+      endTime,
+      currentPrice: startingPrice,
       item: { id: itemId },
     });
 
@@ -65,7 +65,7 @@ export class AuctionsService {
       where,
       take: limit,
       skip,
-      order: { end_time: 'DESC' },
+      order: { endTime: 'DESC' },
       relations: ['item', 'item.seller', 'biddings', 'winningBid'],
     });
 
@@ -140,7 +140,7 @@ export class AuctionsService {
 
     const expiredAuctions = await this.auctionsRepository.find({
       where: {
-        end_time: LessThan(now),
+        endTime: LessThan(now),
         status: Not(AuctionStatus.FINISHED),
       },
       relations: ['biddings', 'biddings.bidder'],
@@ -167,7 +167,7 @@ export class AuctionsService {
     }
 
     const highestBid = await this.getHighestBid(auction);
-    const winningAmount = highestBid?.amount ?? auction.starting_price;
+    const winningAmount = highestBid?.amount ?? auction.startingPrice;
 
     if (highestBid) {
       this.logger.log(
@@ -179,7 +179,7 @@ export class AuctionsService {
     }
 
     auction.status = AuctionStatus.FINISHED;
-    auction.current_price = winningAmount;
+    auction.currentPrice = winningAmount;
     return this.auctionsRepository.save(auction);
   }
 
@@ -192,7 +192,7 @@ export class AuctionsService {
   //   if (auction.status !== STATUS.FINISHED) throw new BadRequestException(`Auction with ID ${auctionId} not finished yet`);
 
   //   const winnerBid = auction.winningBid ?? (await this.getHighestBid(auction));
-  //   const winningAmount = winnerBid?.amount ?? auction.starting_price;
+  //   const winningAmount = winnerBid?.amount ?? auction.startingPrice;
   //   const winner = winnerBid?.bidder ?? null;
   //   return { winner, winning_bid_amount: winningAmount, auction };
   // }

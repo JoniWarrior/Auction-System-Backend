@@ -20,13 +20,13 @@ export class Bidding {
   @ManyToOne(() => Auction, (auction) => auction.biddings, {
     onDelete: 'CASCADE',
   })
-  @JoinColumn({ name: 'auction_id' })
+  @JoinColumn({ name: 'auctionId' })
   auction: Auction;
 
   @ManyToOne(() => User, (bidder) => bidder.biddings, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'bidder_id' })
+  @JoinColumn({ name: 'bidderId' })
   bidder: User;
 
   @CreateDateColumn()
-  created_at: Date;
+  createdAt: Date;
 }

@@ -20,8 +20,8 @@
     "typeorm": "ts-node --transpile-only ./node_modules/typeorm/cli.js",
     "migration:create": "npm run typeorm -- migration:create",
     "migration:generate": "npm run typeorm -- migration:generate",
-    "migration:run": "ts-node --transpile-only ./node_modules/typeorm/cli.js -d src/typeorm.config.ts migration:run",
-    "migration:revert": "ts-node --transpile-only ./node_modules/typeorm/cli.js -d src/typeorm.config.ts migration:revert"
+    "migration:run": "ts-node --transpile-only ./node_modules/typeorm/cli.js -d src/datasource.ts migration:run",
+    "migration:revert": "ts-node --transpile-only ./node_modules/typeorm/cli.js -d src/datasource.ts migration:revert"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",

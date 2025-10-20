@@ -1,6 +1,6 @@
 export type CreateAuction = {
-    starting_price : number
-    end_time : Date
+    startingPrice : number
+    endTime : Date
     itemId : string
 };
 

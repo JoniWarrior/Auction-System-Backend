@@ -13,28 +13,28 @@ import { Bidding } from './bidding.entity';
 import { AuctionStatus } from '../def/enums/auction_status.enum';
 
 @Entity('auctions')
-@Index(['status', 'end_time'])
+@Index(['status', 'endTime'])
 export class Auction {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
   @Column()
-  starting_price: number;
+  startingPrice: number;
 
   @Column({ nullable: false })
-  current_price: number;
+  currentPrice: number;
 
   @Column()
-  end_time: Date;
+  endTime: Date;
 
-  @Column()
+  @Column({ type: 'enum', enum: AuctionStatus, default: AuctionStatus.PENDING })
   status: AuctionStatus;
 
   @CreateDateColumn()
-  created_at: Date;
+  createdAt: Date;
 
   @OneToOne(() => Item, (item) => item.auction)
-  @JoinColumn({ name: 'item_id' })
+  @JoinColumn({ name: 'itemId' })
   item: Item;
 
   @OneToMany(() => Bidding, (bidding) => bidding.auction, {
@@ -43,6 +43,6 @@ export class Auction {
   biddings: Bidding[];
 
   @OneToOne(() => Bidding, { nullable: true })
-  @JoinColumn({ name: 'winner_bid_id' })
+  @JoinColumn({ name: 'winnerBidId' })
   winningBid: Bidding;
 }

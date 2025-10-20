@@ -1,4 +1,4 @@
-import { DataSource } from 'typeorm';
+import { DataSource, DefaultNamingStrategy } from 'typeorm';
 import * as dotenv from 'dotenv';
 import { User } from './entities/user.entity';
 import { Item } from './entities/item.entity';
@@ -18,4 +18,5 @@ export const AppDataSource = new DataSource({
   entities: [User, Item, Notification, Auction, Bidding],
   migrations: ['src/migrations/*.ts'],
   synchronize: false,
+  namingStrategy: new DefaultNamingStrategy(),
 });

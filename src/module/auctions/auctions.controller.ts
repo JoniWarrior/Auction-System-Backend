@@ -31,8 +31,8 @@ export class AuctionsController {
     @Body(
       ValidationPipe.from(
         Joi.object({
-          starting_price: Joi.number().required().min(0),
-          end_time: Joi.date().required(),
+          startingPrice: Joi.number().required().min(0),
+          endTime: Joi.date().required(),
           itemId: Joi.string().guid({ version: 'uuidv4' }).required(),
         }),
       ),
@@ -85,8 +85,8 @@ export class AuctionsController {
     @Body(
       ValidationPipe.from(
         Joi.object({
-          starting_price: Joi.number().required().min(0),
-          end_time: Joi.date().required(),
+          startingPrice: Joi.number().required().min(0),
+          endTime: Joi.date().required(),
           itemId: Joi.string().guid({ version: 'uuidv4' }).required(),
         }),
       ),

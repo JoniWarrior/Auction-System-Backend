@@ -25,12 +25,12 @@ export class Item {
   imageURL: string;
 
   @ManyToOne(() => User, (user) => user.items, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'seller_id' })
+  @JoinColumn({ name: 'sellerId' })
   seller: User;
 
   @OneToOne(() => Auction, (auction) => auction.item, { onDelete: 'CASCADE' })
   auction: Auction;
 
   @CreateDateColumn()
-  created_at: Date;
+  createdAt: Date;
 }
