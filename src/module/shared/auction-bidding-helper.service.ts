@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Injectable,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Auction } from 'src/entities/auction.entity';
@@ -17,13 +18,18 @@ export class AuctionBiddingHelperService {
 
     @InjectRepository(Bidding)
     private biddingsRepository: Repository<Bidding>,
-  ) {}
 
-  async validateAuctionForBidding(auctionId: string): Promise<Auction> {
+    ) {}
+
+  async validateAuctionForBidding(auctionId: string, bidderId : string): Promise<Auction> {
     const auction = await this.auctionsRepository.findOne({
       where: { id: auctionId },
-      relations: ['biddings', 'biddings.bidder', 'item'],
+      relations: ['biddings', 'biddings.bidder', 'item', "item.seller"],
     });
+
+    if (auction?.item.seller.id === bidderId) {
+      throw new UnauthorizedException("You cannot bid in your own auction!");
+    }
 
     if (!auction) {
       throw new BadRequestException(`Auction with id ${auctionId} not found`);

@@ -23,8 +23,8 @@ export class BiddingsController {
   constructor(private readonly biddingsService: BiddingsService) {}
 
   @Post()
-  @Roles('bidder')
-  @UseGuards(RolesGuard)
+  // @Roles('bidder')
+  // @UseGuards(RolesGuard)
   create(
     @Body(
       ValidationPipe.from(
