@@ -8,6 +8,7 @@ import {
   ManyToOne,
   OneToOne,
   JoinColumn,
+  DeleteDateColumn,
 } from 'typeorm';
 
 @Entity('items')
@@ -28,9 +29,15 @@ export class Item {
   @JoinColumn({ name: 'sellerId' })
   seller: User;
 
+  @Column({name : "sellerId"})
+  readonly sellerId : string
+
   @OneToOne(() => Auction, (auction) => auction.item, { onDelete: 'CASCADE' })
   auction: Auction;
 
   @CreateDateColumn()
   createdAt: Date;
+
+  @DeleteDateColumn()
+  deletedAt?: Date;
 }

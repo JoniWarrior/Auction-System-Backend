@@ -5,6 +5,7 @@ import {
   CreateDateColumn,
   ManyToOne,
   JoinColumn,
+  DeleteDateColumn,
 } from 'typeorm';
 import { Auction } from './auction.entity';
 import { User } from './user.entity';
@@ -23,10 +24,19 @@ export class Bidding {
   @JoinColumn({ name: 'auctionId' })
   auction: Auction;
 
+  @Column({name : "auctionId"})
+  readonly auctionId : string
+
   @ManyToOne(() => User, (bidder) => bidder.biddings, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'bidderId' })
   bidder: User;
 
+  @Column({name : "bidderId"})
+  readonly bidderId : string
+
   @CreateDateColumn()
   createdAt: Date;
+
+  @DeleteDateColumn()
+  deletedAt?: Date
 }

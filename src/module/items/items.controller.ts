@@ -87,6 +87,6 @@ export class ItemsController {
 
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.itemsService.remove(id);
+    return this.itemsService.delete(id);
   }
 }

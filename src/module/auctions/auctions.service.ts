@@ -48,7 +48,8 @@ export class AuctionsService {
       startingPrice,
       endTime,
       currentPrice: startingPrice,
-      item: { id: itemId },
+      // item: { id: itemId },
+      itemId
     });
 
     return this.auctionsRepository.save(auction);
@@ -77,7 +78,7 @@ export class AuctionsService {
     return this.auctionsRepository.find({
       where: {
         item: {
-          seller: { id: sellerId },
+          sellerId,
         },
       },
       relations: ['item', 'item.seller', 'biddings'],
@@ -87,7 +88,7 @@ export class AuctionsService {
   async findMyAuctionsAsBidder(bidderId: string): Promise<Auction[]> {
     return this.auctionsRepository.find({
       where: {
-        biddings: { bidder: { id: bidderId } },
+        biddings: { bidderId },
       },
       relations: ['item', 'item.seller', 'biddings', 'winningBid'],
     });
@@ -110,10 +111,11 @@ export class AuctionsService {
     return this.auctionsRepository.save(updatedAuction);
   }
 
-  async remove(id: string): Promise<Auction> {
-    const auction = await this.getAuction(id);
-    await this.auctionsRepository.remove(auction);
-    return auction;
+  async delete(id: string) {
+    const existingAuction = await this.auctionsRepository.findOne({where : {id}});
+    if (!existingAuction) throw new NotFoundException(`Auction with Id: ${id} not found`)
+    await this.auctionsRepository.softDelete(id);
+    return { message: `Auction ${id} has been soft-deleted` };
   }
 
   async findBiddingsOfAuction(auctionId: string): Promise<Bidding[]> {

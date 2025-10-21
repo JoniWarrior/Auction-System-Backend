@@ -34,68 +34,76 @@ export class BiddingsService {
       : auction.startingPrice;
   }
 
+
   // Version 2 :
   async create(
-  createBidding: CreateBidding,
-  bidderId: string,
-): Promise<Bidding> {
-  const { auctionId, amount } = createBidding;
+    createBidding: CreateBidding,
+    bidderId: string,
+  ): Promise<Bidding> {
+    const { auctionId, amount } = createBidding;
 
-  const auction = await this.helperService.validateAuctionForBidding(auctionId);
-  const bidder = await this.usersRepository.findOne({ where: { id: bidderId } });
-
-  if (!bidder) {
-    throw new NotFoundException(`User (bidder) with ID ${bidderId} not found`);
-  }
-  const currentHighestBid = this.getHighestBid(auction);
-  if (amount <= currentHighestBid) {
-    throw new BadRequestException(
-      `Bid amount must be higher than $${currentHighestBid}`,
+    const auction = await this.helperService.validateAuctionForBidding(
+      // auction : {id : auctionId}
+      auctionId,
+      bidderId,
     );
+    const bidder = await this.usersRepository.findOne({
+      where: { id: bidderId },
+    });
+
+    if (!bidder) {
+      throw new NotFoundException(
+        `User (bidder) with ID ${bidderId} not found`,
+      );
+    }
+    const currentHighestBid = this.getHighestBid(auction);
+    if (amount <= currentHighestBid) {
+      throw new BadRequestException(
+        `Bid amount must be higher than $${currentHighestBid}`,
+      );
+    }
+
+    const isFirstBid = (auction.biddings?.length ?? 0) === 0;
+    const updatedAuction = await this.helperService.updateAuction(auction, {
+      amount,
+      isFirstBid,
+    });
+
+    const bidding = this.biddingsRepository.create({
+      amount,
+      auctionId: updatedAuction.id,
+      bidderId,
+    });
+
+    const savedBid = await this.biddingsRepository.save(bidding);
+    const fullBid = await this.biddingsRepository.findOne({
+      where: { id: savedBid.id },
+      relations: ['auction', 'bidder', 'auction.item'],
+    });
+
+    if (!fullBid) throw new BadRequestException('Not exist!');
+    this.biddingsGateway.broadcastNewBid(updatedAuction.id, fullBid);
+
+    const pastBidders = auction.biddings
+      .map((b) => b.bidder.id)
+      .filter((id) => id !== bidderId);
+
+    const uniquePastBidders = [...new Set(pastBidders)];
+
+    await this.biddingsGateway.broadcastOutBid(
+      updatedAuction.id,
+      fullBid,
+      uniquePastBidders,
+    );
+
+    return fullBid;
   }
-
-  const isFirstBid = (auction.biddings?.length ?? 0) === 0;
-  const updatedAuction = await this.helperService.updateAuction(auction, {
-    amount,
-    isFirstBid,
-  });
-
-  const bidding = this.biddingsRepository.create({
-    amount,
-    auction: { id: updatedAuction.id },
-    bidder: { id: bidder.id },
-  });
-
-  const savedBid = await this.biddingsRepository.save(bidding);
-  const fullBid = await this.biddingsRepository.findOne({
-    where: { id: savedBid.id },
-    relations: ['auction', 'bidder', 'auction.item'],
-  });
-
-  if (!fullBid) throw new BadRequestException("Not exist!");
-  this.biddingsGateway.broadcastNewBid(updatedAuction.id, fullBid);
-
-  const pastBidders = auction.biddings
-    .map((b) => b.bidder.id)
-    .filter((id) => id !== bidderId);
-
-  const uniquePastBidders = [...new Set(pastBidders)];
-
-  await this.biddingsGateway.broadcastOutBid(
-    updatedAuction.id,
-    fullBid,
-    uniquePastBidders,
-  );
-
-  return fullBid;
-}
 
   async findAll(): Promise<Bidding[]> {
     const biddings = await this.biddingsRepository.find({
       relations: ['auction', 'bidder'],
       order: { amount: 'DESC' },
     });
-    if (!biddings.length) throw new NotFoundException('No biddings found');
     return biddings;
   }
 
@@ -122,26 +130,27 @@ export class BiddingsService {
     return this.biddingsRepository.save(updatedBidding);
   }
 
-  async remove(id: string): Promise<Bidding> {
-    const bidding = await this.findOne(id);
-    await this.biddingsRepository.remove(bidding);
-    return bidding;
+  async delete(id: string) {
+    const existingBid = await this.biddingsRepository.findOne({where : {id}});
+    if (!existingBid) throw new NotFoundException(`Bidding with Id: ${id} not found!`)
+    await this.biddingsRepository.softDelete(id);
+    return { message: `Bidding ${id} has been soft-deleted` };
   }
 
   async findByAuction(auctionId: string): Promise<Bidding[]> {
     return this.biddingsRepository.find({
-      where: { auction: { id: auctionId } },
+      where: { auctionId },
       relations: ['bidder'],
       order: { amount: 'DESC' },
     });
   }
 
-
-  async findBidsByBider(bidderId : string) : Promise<Bidding[]> {
-    return this.biddingsRepository.find({where : {
-      bidder : {id : bidderId}
-    },
-    relations : ["auction", "auction.item", ""]})
+  async findBidsByBider(bidderId: string): Promise<Bidding[]> {
+    return this.biddingsRepository.find({
+      where: {
+        bidderId,
+      },
+      relations: ['auction', 'auction.item', ''],
+    });
   }
-
 }

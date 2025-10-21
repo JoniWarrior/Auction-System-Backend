@@ -84,7 +84,11 @@ export class BiddingsGateway
     for (const userId of outbidderIds) {
       const socketId = this.userSockets.get(userId);
 
-      await this.notificationsService.create(userId, auctionId, message);
+      await this.notificationsService.create(
+        userId,
+        auctionId,
+        message,
+      );
       if (socketId) {
         this.server.to(socketId).emit('outBid', { message, bidding });
       }

@@ -45,7 +45,7 @@ export class ItemsService {
         title: createItem.title,
         description: createItem.description,
         imageURL,
-        seller: { id: sellerId },
+        sellerId,
       });
       const savedItem = await this.itemsRepository.save(item);
       return savedItem;
@@ -74,11 +74,9 @@ export class ItemsService {
   async findBySeller(sellerId: string): Promise<Item[]> {
     const items = await this.itemsRepository.find({
       select: ['id', 'title', 'description'],
-      where: { seller: { id: sellerId } },
+      where: { sellerId },
       relations: ['seller'],
     });
-    if (!items.length)
-      throw new NotFoundException(`No items found of seller : ${sellerId}`);
     return items;
   }
 
@@ -88,25 +86,23 @@ export class ItemsService {
     return this.itemsRepository.save(updatedItem);
   }
 
-  async remove(id: string): Promise<Item> {
-    const item = await this.findOne(id);
-    await this.itemsRepository.remove(item);
-    return item;
+  async delete(id: string) {
+    const existingItem = await this.itemsRepository.findOne({where : {id}});
+    if (!existingItem) throw new NotFoundException(`Item with Id: ${id} not found! `)
+    await this.itemsRepository.softDelete(id);
+    return { message: `Item ${id} has been soft-deleted` };
   }
 
   async findMyItemsWithoutAuction(userId: string): Promise<Item[]> {
-  const empty_items = await this.itemsRepository.find({
-    where: {
-      seller: { id: userId },
-      auction: { id : IsNull()},
-    },
-    relations: ['seller', 'auction'],
-  });
-  console.log("Empty Items", empty_items);
-  return empty_items;
-}
-
-
+    const empty_items = await this.itemsRepository.find({
+      where: {
+        sellerId: userId,
+        auction: { id: IsNull() },
+      },
+      relations: ['seller', 'auction'],
+    });
+    return empty_items;
+  }
 
   // async findSellerItems(id: string): Promise<Item[]> {
   //   const user = await this.usersService.getUser(id);
