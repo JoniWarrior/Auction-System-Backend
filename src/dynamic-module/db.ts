@@ -5,7 +5,7 @@ import { Item } from 'src/entities/item.entity';
 import { User } from 'src/entities/user.entity';
 import { Notification } from 'src/entities/notifications.entity';
 
-export const DBModule = TypeOrmModule.forRoot({
+export const DB = TypeOrmModule.forRoot({
   type: 'postgres',
   host: process.env.DB_HOST,
   port: Number(process.env.DB_PORT),

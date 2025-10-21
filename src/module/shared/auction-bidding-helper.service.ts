@@ -8,6 +8,7 @@ import { Auction } from 'src/entities/auction.entity';
 import { Bidding } from 'src/entities/bidding.entity';
 import { Repository } from 'typeorm';
 import { AuctionStatus } from '../../def/enums/auction_status.enum';
+import moment from 'moment';
 
 @Injectable()
 export class AuctionBiddingHelperService {
@@ -31,8 +32,7 @@ export class AuctionBiddingHelperService {
     if (auction?.status === AuctionStatus.FINISHED)
       throw new BadRequestException('Auction has already finished');
 
-    const now = new Date();
-    if (now > auction.endTime)
+    if (moment().isSameOrAfter(auction.endTime))
       throw new BadRequestException('Auction has ended');
     return auction;
   }
