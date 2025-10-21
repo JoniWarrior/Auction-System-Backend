@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, ILike, FindOptionsWhere } from 'typeorm';
-import { User } from '../../entities/user.entity';
+import { User } from '../../entity/user.entity';
 import { CreateUser } from './types/create-user.type';
 import { UpdateUser } from './types/update-user.type';
 import { NotFoundException } from '@nestjs/common';

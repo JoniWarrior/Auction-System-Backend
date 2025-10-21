@@ -19,7 +19,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import * as multer from 'multer';
 import { ValidationPipe } from 'src/pipes/joi-validator.pipe';
 import Joi from 'joi';
-import { CurrentLoggedInUser } from 'src/decorators/current-user.decorator';
+import { CurrentLoggedInUser } from 'src/decorator/current-user.decorator';
 
 @Controller('items')
 @UseGuards(JwtAuthGuard, RolesGuard)

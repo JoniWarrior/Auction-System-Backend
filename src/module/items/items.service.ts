@@ -6,7 +6,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { CreateItem } from './types/create-item.type';
 import { UpdateItem } from './types/update-item.type';
-import { Item } from '../../entities/item.entity';
+import { Item } from '../../entity/item.entity';
 import { IsNull, Repository } from 'typeorm';
 import { v2 as cloudinary } from 'cloudinary';
 

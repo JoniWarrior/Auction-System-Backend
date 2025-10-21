@@ -1,3 +1,3 @@
 import { ConfigModule } from '@nestjs/config';
 
-export const ConfigModul = ConfigModule.forRoot({ isGlobal: true });
+export const CONFIG = ConfigModule.forRoot({ isGlobal: true });

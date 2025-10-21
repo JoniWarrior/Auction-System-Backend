@@ -2,12 +2,13 @@ import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Not, Repository, LessThan, FindOptionsWhere } from 'typeorm';
 import { CreateAuction } from './types/create-auction.type';
-import { Auction } from '../../entities/auction.entity';
-import { Bidding } from '../../entities/bidding.entity';
+import { Auction } from '../../entity/auction.entity';
+import { Bidding } from '../../entity/bidding.entity';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { FindAuctionsFilter } from './types/auctions-filter.type';
 import { AuctionBiddingHelperService } from '../shared/auction-bidding-helper.service';
 import { AuctionStatus } from '../../def/enums/auction_status.enum';
+import moment from 'moment';
 
 @Injectable()
 export class AuctionsService {
@@ -69,15 +70,6 @@ export class AuctionsService {
       relations: ['item', 'item.seller', 'biddings', 'winningBid'],
     });
 
-    if (!auctions.length) {
-      if (filters.status) {
-        throw new NotFoundException(
-          `No auctions with status ${filters.status} found`,
-        );
-      } else {
-        throw new NotFoundException(`No auctions found`);
-      }
-    }
     return auctions;
   }
 
@@ -135,11 +127,10 @@ export class AuctionsService {
   @Cron(CronExpression.EVERY_MINUTE)
   async handleExpiredAuctions() {
     this.logger.log('Checking for Expired Auctions...');
-    const now = new Date();
 
     const expiredAuctions = await this.auctionsRepository.find({
       where: {
-        endTime: LessThan(now),
+        endTime: LessThan(moment().toDate()),
         status: Not(AuctionStatus.FINISHED),
       },
       relations: ['biddings', 'biddings.bidder'],

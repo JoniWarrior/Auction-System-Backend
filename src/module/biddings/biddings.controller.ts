@@ -15,7 +15,7 @@ import { JwtAuthGuard } from '../../auth/guards/auth.guards';
 import { Roles, RolesGuard } from '../../auth/guards/roles.guards';
 import Joi from 'joi';
 import { ValidationPipe } from 'src/pipes/joi-validator.pipe';
-import { CurrentLoggedInUser } from 'src/decorators/current-user.decorator';
+import { CurrentLoggedInUser } from 'src/decorator/current-user.decorator';
 
 @Controller('biddings')
 @UseGuards(JwtAuthGuard)

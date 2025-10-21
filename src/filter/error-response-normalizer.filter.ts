@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { ValidationError } from 'joi';
 import { Response } from 'express';
+import moment from 'moment';
 
 export const normalizeResponse = (res: any) => {
   let message = '';
@@ -39,7 +40,7 @@ export class ErrorResponseNormalizerFilter
     if (exception instanceof ValidationError) {
       const response = normalizeResponse({
         _message: exception.message,
-        _timestamp : new Date().toISOString(),
+        _timestamp : moment().toISOString(),
         _errors: exception.details.map((detail) => ({
           key: detail.context?.key,
           message: detail.message,

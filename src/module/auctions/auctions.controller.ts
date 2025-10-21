@@ -17,7 +17,7 @@ import { Roles, RolesGuard } from 'src/auth/guards/roles.guards';
 import { type FindAuctionsFilter } from './types/auctions-filter.type';
 import { ValidationPipe } from 'src/pipes/joi-validator.pipe';
 import Joi from 'joi';
-import { CurrentLoggedInUser } from 'src/decorators/current-user.decorator';
+import { CurrentLoggedInUser } from 'src/decorator/current-user.decorator';
 import { AuctionStatus } from '../../def/enums/auction_status.enum';
 
 @Controller('auctions')

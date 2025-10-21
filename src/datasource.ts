@@ -1,10 +1,10 @@
 import { DataSource, DefaultNamingStrategy } from 'typeorm';
 import * as dotenv from 'dotenv';
-import { User } from './entities/user.entity';
-import { Item } from './entities/item.entity';
-import { Auction } from './entities/auction.entity';
-import { Bidding } from './entities/bidding.entity';
-import { Notification } from './entities/notifications.entity';
+import { User } from './entity/user.entity';
+import { Item } from './entity/item.entity';
+import { Auction } from './entity/auction.entity';
+import { Bidding } from './entity/bidding.entity';
+import { Notification } from './entity/notifications.entity';
 
 dotenv.config();
 

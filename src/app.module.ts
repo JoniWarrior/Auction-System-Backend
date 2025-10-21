@@ -8,14 +8,14 @@ import { AuctionsModule } from './module/auctions/auctions.module';
 import { AuthModule } from './auth/auth.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { NotificationsModule } from './module/notifications/notifications.module';
-import { ConfigModul } from './dynamic-module/config';
-import { DBModule } from './dynamic-module/db';
+import { CONFIG } from './dynamic-module/CONFIG';
+import { DB } from './dynamic-module/db';
 
 @Module({
   imports: [
     ScheduleModule.forRoot(),
-    ConfigModul,
-    DBModule,
+    CONFIG,
+    DB,
     UsersModule,
     ItemsModule,
     BiddingsModule,
