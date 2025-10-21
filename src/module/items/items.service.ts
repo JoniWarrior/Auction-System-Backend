@@ -88,25 +88,22 @@ export class ItemsService {
     return this.itemsRepository.save(updatedItem);
   }
 
-  async remove(id: string): Promise<Item> {
-    const item = await this.findOne(id);
-    await this.itemsRepository.remove(item);
-    return item;
+  async delete(id: string) {
+    await this.itemsRepository.softDelete(id);
+    return { message: `Item ${id} has been soft-deleted` };
   }
 
   async findMyItemsWithoutAuction(userId: string): Promise<Item[]> {
-  const empty_items = await this.itemsRepository.find({
-    where: {
-      seller: { id: userId },
-      auction: { id : IsNull()},
-    },
-    relations: ['seller', 'auction'],
-  });
-  console.log("Empty Items", empty_items);
-  return empty_items;
-}
-
-
+    const empty_items = await this.itemsRepository.find({
+      where: {
+        seller: { id: userId },
+        auction: { id: IsNull() },
+      },
+      relations: ['seller', 'auction'],
+    });
+    console.log('Empty Items', empty_items);
+    return empty_items;
+  }
 
   // async findSellerItems(id: string): Promise<Item[]> {
   //   const user = await this.usersService.getUser(id);

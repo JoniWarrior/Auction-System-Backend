@@ -23,8 +23,6 @@ export class BiddingsController {
   constructor(private readonly biddingsService: BiddingsService) {}
 
   @Post()
-  // @Roles('bidder')
-  // @UseGuards(RolesGuard)
   create(
     @Body(
       ValidationPipe.from(
@@ -79,6 +77,6 @@ export class BiddingsController {
   @Roles('bidder')
   @UseGuards(RolesGuard)
   remove(@Param('id') id: string) {
-    return this.biddingsService.remove(id);
+    return this.biddingsService.delete(id);
   }
 }

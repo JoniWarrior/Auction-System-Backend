@@ -4,6 +4,7 @@ import {
   PrimaryGeneratedColumn,
   CreateDateColumn,
   OneToMany,
+  DeleteDateColumn,
 } from 'typeorm';
 import { Item } from './item.entity';
 import { Bidding } from './bidding.entity';
@@ -40,4 +41,7 @@ export class User {
     onDelete: 'CASCADE',
   })
   biddings: Bidding[];
+
+  @DeleteDateColumn()
+  deletedAt?: Date;
 }

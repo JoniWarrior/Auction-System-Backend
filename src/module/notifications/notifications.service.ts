@@ -29,4 +29,9 @@ export class NotificationsService {
   async markAsRead(id: string) {
     return this.notificationsRepo.update(id, { isRead: true });
   }
+
+  async delete(id: string) {
+    await this.notificationsRepo.softDelete(id);
+    return { message: `Notification ${id} has been soft-deleted` };
+  }
 }

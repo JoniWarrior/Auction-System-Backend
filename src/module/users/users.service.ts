@@ -53,10 +53,9 @@ export class UsersService {
     return this.usersRepository.save(updatedUser);
   }
 
-  async remove(id: string): Promise<User> {
-    const user = await this.getUser(id);
-    await this.usersRepository.remove(user);
-    return user;
+  async delete(id: string) {
+    await this.usersRepository.softDelete(id);
+    return { message: `User ${id} has been soft-deleted` };
   }
 
   async findAll(filters: FindUsersQuery): Promise<User[]> {

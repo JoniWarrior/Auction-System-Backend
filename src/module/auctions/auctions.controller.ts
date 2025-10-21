@@ -99,7 +99,7 @@ export class AuctionsController {
   @UseGuards(JwtAuthGuard)
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.auctionsService.remove(id);
+    return this.auctionsService.delete(id);
   }
 
   @UseGuards(JwtAuthGuard)

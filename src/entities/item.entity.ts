@@ -8,6 +8,7 @@ import {
   ManyToOne,
   OneToOne,
   JoinColumn,
+  DeleteDateColumn,
 } from 'typeorm';
 
 @Entity('items')
@@ -33,4 +34,7 @@ export class Item {
 
   @CreateDateColumn()
   createdAt: Date;
+
+  @DeleteDateColumn()
+  deletedAt?: Date;
 }

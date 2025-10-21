@@ -103,7 +103,6 @@ export class BiddingsService {
       relations: ['auction', 'bidder'],
       order: { amount: 'DESC' },
     });
-    if (!biddings.length) throw new NotFoundException('No biddings found');
     return biddings;
   }
 
@@ -130,10 +129,9 @@ export class BiddingsService {
     return this.biddingsRepository.save(updatedBidding);
   }
 
-  async remove(id: string): Promise<Bidding> {
-    const bidding = await this.findOne(id);
-    await this.biddingsRepository.remove(bidding);
-    return bidding;
+  async delete(id: string) {
+    await this.biddingsRepository.softDelete(id);
+    return { message: `Bidding ${id} has been soft-deleted` };
   }
 
   async findByAuction(auctionId: string): Promise<Bidding[]> {

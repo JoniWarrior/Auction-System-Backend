@@ -26,7 +26,6 @@ export class AuctionBiddingHelperService {
       where: { id: auctionId },
       relations: ['biddings', 'biddings.bidder', 'item', "item.seller"],
     });
-
     
     if (auction?.item.seller.id === bidderId) {
       throw new UnauthorizedException("You cannot bid in your own auction!");

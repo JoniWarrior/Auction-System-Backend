@@ -7,6 +7,7 @@ import {
   OneToMany,
   JoinColumn,
   Index,
+  DeleteDateColumn,
 } from 'typeorm';
 import { Item } from './item.entity';
 import { Bidding } from './bidding.entity';
@@ -45,4 +46,7 @@ export class Auction {
   @OneToOne(() => Bidding, { nullable: true })
   @JoinColumn({ name: 'winnerBidId' })
   winningBid: Bidding;
+
+  @DeleteDateColumn()
+  deletedAt?: Date;
 }

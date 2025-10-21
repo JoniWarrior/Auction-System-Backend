@@ -118,10 +118,9 @@ export class AuctionsService {
     return this.auctionsRepository.save(updatedAuction);
   }
 
-  async remove(id: string): Promise<Auction> {
-    const auction = await this.getAuction(id);
-    await this.auctionsRepository.remove(auction);
-    return auction;
+  async delete(id: string) {
+    await this.auctionsRepository.softDelete(id);
+    return { message: `Auction ${id} has been soft-deleted` };
   }
 
   async findBiddingsOfAuction(auctionId: string): Promise<Bidding[]> {
