@@ -13,7 +13,7 @@ import { JwtAuthGuard } from '../../auth/guards/auth.guards';
 import { UsersService } from './users.service';
 import { type CreateUser } from './types/create-user.type';
 import { type UpdateUser } from './types/update-user.type';
-import { type FindUsersQuery } from './types/find-users-query.type';
+import { type PaginationQuery } from './types/find-users-query.type';
 import Joi from 'joi';
 import { ValidationPipe } from 'src/pipes/joi-validator.pipe';
 import { UserRole } from '../../def/enums/user_role.enum';
@@ -49,15 +49,13 @@ export class UsersController {
     @Query(
       ValidationPipe.from(
         Joi.object({
-          email: Joi.string().email(),
-          name: Joi.string(),
-          role: Joi.string().valid(...Object.values(UserRole)),
-          limit: Joi.number(),
-          page: Joi.number(),
+          qs: Joi.string().required(),
+          page: Joi.number().positive().default(1),
+          pageSize: Joi.number().positive().default(10),
         }),
       ),
     )
-    query: FindUsersQuery,
+    query: PaginationQuery,
   ) {
     return this.usersService.findAll(query);
   }

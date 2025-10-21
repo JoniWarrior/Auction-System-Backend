@@ -5,7 +5,7 @@ import { User } from '../../entity/user.entity';
 import { CreateUser } from './types/create-user.type';
 import { UpdateUser } from './types/update-user.type';
 import { NotFoundException } from '@nestjs/common';
-import { FindUsersQuery } from './types/find-users-query.type';
+import { PaginationQuery } from './types/find-users-query.type';
 import { UserRole } from '../../def/enums/user_role.enum';
 
 @Injectable()
@@ -59,21 +59,14 @@ export class UsersService {
     return user;
   }
 
-  async findAll(filters: FindUsersQuery): Promise<User[]> {
-    const where: FindOptionsWhere<User> = {};
-
-    if (filters.email) where.email = filters.email;
-    if (filters.name) where.name = ILike(`%${filters.name}%`);
-    if (filters.role) where.role = filters.role;
-
-    const limit = filters.limit ?? 20;
-    const page = filters.page ?? 1;
-    const skip = (page - 1) * limit;
-
+  async findAll({ qs, pageSize, page }: PaginationQuery): Promise<User[]> {
     return this.usersRepository.find({
-      where,
-      take: limit,
-      skip,
+      where: {
+        email: ILike(`%${qs}%`),
+        name: ILike(`%${qs}%`),
+      },
+      take: pageSize,
+      skip: (page - 1) * pageSize,
       order: { name: 'ASC' },
     });
   }
