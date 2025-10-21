@@ -7,12 +7,12 @@ import {
 import { CreateBidding } from './types/create-bidding.type';
 import { UpdateBidding } from './types/update-bidding.type';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Bidding } from '../../entities/bidding.entity';
+import { Bidding } from '../../entity/bidding.entity';
 import { Repository } from 'typeorm';
-import { Auction } from '../../entities/auction.entity';
+import { Auction } from '../../entity/auction.entity';
 import { BiddingsGateway } from './biddings-gateway';
 import { AuctionBiddingHelperService } from '../shared/auction-bidding-helper.service';
-import { User } from 'src/entities/user.entity';
+import { User } from 'src/entity/user.entity';
 
 @Injectable()
 export class BiddingsService {
@@ -34,7 +34,7 @@ export class BiddingsService {
       : auction.startingPrice;
   }
 
-  // Version 2 : 
+  // Version 2 :
   async create(
   createBidding: CreateBidding,
   bidderId: string,
@@ -140,8 +140,8 @@ export class BiddingsService {
   async findBidsByBider(bidderId : string) : Promise<Bidding[]> {
     return this.biddingsRepository.find({where : {
       bidder : {id : bidderId}
-    }, 
+    },
     relations : ["auction", "auction.item", ""]})
   }
-  
+
 }

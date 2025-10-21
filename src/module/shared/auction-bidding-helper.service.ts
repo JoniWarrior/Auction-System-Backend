@@ -4,8 +4,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Auction } from 'src/entities/auction.entity';
-import { Bidding } from 'src/entities/bidding.entity';
+import { Auction } from 'src/entity/auction.entity';
+import { Bidding } from 'src/entity/bidding.entity';
 import { Repository } from 'typeorm';
 import { AuctionStatus } from '../../def/enums/auction_status.enum';
 import moment from 'moment';

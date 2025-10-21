@@ -1,9 +1,9 @@
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Auction } from 'src/entities/auction.entity';
-import { Bidding } from 'src/entities/bidding.entity';
-import { Item } from 'src/entities/item.entity';
-import { User } from 'src/entities/user.entity';
-import { Notification } from 'src/entities/notifications.entity';
+import { Auction } from 'src/entity/auction.entity';
+import { Bidding } from 'src/entity/bidding.entity';
+import { Item } from 'src/entity/item.entity';
+import { User } from 'src/entity/user.entity';
+import { Notification } from 'src/entity/notifications.entity';
 
 export const DB = TypeOrmModule.forRoot({
   type: 'postgres',
