@@ -54,6 +54,8 @@ export class UsersService {
   }
 
   async delete(id: string) {
+    const existingUser = await this.usersRepository.findOne({where : {id}});
+    if (!existingUser) throw new NotFoundException(`User with Id: ${id} not found!`);
     await this.usersRepository.softDelete(id);
     return { message: `User ${id} has been soft-deleted` };
   }

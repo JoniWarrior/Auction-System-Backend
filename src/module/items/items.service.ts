@@ -87,6 +87,8 @@ export class ItemsService {
   }
 
   async delete(id: string) {
+    const existingItem = await this.itemsRepository.findOne({where : {id}});
+    if (!existingItem) throw new NotFoundException(`Item with Id: ${id} not found! `)
     await this.itemsRepository.softDelete(id);
     return { message: `Item ${id} has been soft-deleted` };
   }

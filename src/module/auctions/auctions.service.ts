@@ -112,6 +112,8 @@ export class AuctionsService {
   }
 
   async delete(id: string) {
+    const existingAuction = await this.auctionsRepository.findOne({where : {id}});
+    if (!existingAuction) throw new NotFoundException(`Auction with Id: ${id} not found`)
     await this.auctionsRepository.softDelete(id);
     return { message: `Auction ${id} has been soft-deleted` };
   }

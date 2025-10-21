@@ -34,6 +34,7 @@ export class BiddingsService {
       : auction.startingPrice;
   }
 
+
   // Version 2 :
   async create(
     createBidding: CreateBidding,
@@ -42,6 +43,7 @@ export class BiddingsService {
     const { auctionId, amount } = createBidding;
 
     const auction = await this.helperService.validateAuctionForBidding(
+      // auction : {id : auctionId}
       auctionId,
       bidderId,
     );
@@ -88,7 +90,7 @@ export class BiddingsService {
 
     const uniquePastBidders = [...new Set(pastBidders)];
 
-    const broadcastOutBid = await this.biddingsGateway.broadcastOutBid(
+    await this.biddingsGateway.broadcastOutBid(
       updatedAuction.id,
       fullBid,
       uniquePastBidders,
@@ -129,6 +131,8 @@ export class BiddingsService {
   }
 
   async delete(id: string) {
+    const existingBid = await this.biddingsRepository.findOne({where : {id}});
+    if (!existingBid) throw new NotFoundException(`Bidding with Id: ${id} not found!`)
     await this.biddingsRepository.softDelete(id);
     return { message: `Bidding ${id} has been soft-deleted` };
   }
