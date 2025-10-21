@@ -48,7 +48,8 @@ export class AuctionsService {
       startingPrice,
       endTime,
       currentPrice: startingPrice,
-      item: { id: itemId },
+      // item: { id: itemId },
+      itemId
     });
 
     return this.auctionsRepository.save(auction);
@@ -77,7 +78,7 @@ export class AuctionsService {
     return this.auctionsRepository.find({
       where: {
         item: {
-          seller: { id: sellerId },
+          sellerId,
         },
       },
       relations: ['item', 'item.seller', 'biddings'],
@@ -87,7 +88,7 @@ export class AuctionsService {
   async findMyAuctionsAsBidder(bidderId: string): Promise<Auction[]> {
     return this.auctionsRepository.find({
       where: {
-        biddings: { bidder: { id: bidderId } },
+        biddings: { bidderId },
       },
       relations: ['item', 'item.seller', 'biddings', 'winningBid'],
     });

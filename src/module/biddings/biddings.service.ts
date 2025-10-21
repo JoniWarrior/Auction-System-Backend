@@ -69,8 +69,8 @@ export class BiddingsService {
 
     const bidding = this.biddingsRepository.create({
       amount,
-      auction: { id: updatedAuction.id },
-      bidder: { id: bidder.id },
+      auctionId: updatedAuction.id,
+      bidderId,
     });
 
     const savedBid = await this.biddingsRepository.save(bidding);
@@ -93,7 +93,6 @@ export class BiddingsService {
       fullBid,
       uniquePastBidders,
     );
-    console.log('BroadCast OutBid: ', broadcastOutBid);
 
     return fullBid;
   }
@@ -136,18 +135,18 @@ export class BiddingsService {
 
   async findByAuction(auctionId: string): Promise<Bidding[]> {
     return this.biddingsRepository.find({
-      where: { auction: { id: auctionId } },
+      where: { auctionId },
       relations: ['bidder'],
       order: { amount: 'DESC' },
     });
   }
 
-
-  async findBidsByBider(bidderId : string) : Promise<Bidding[]> {
-    return this.biddingsRepository.find({where : {
-      bidder : {id : bidderId}
-    }, 
-    relations : ["auction", "auction.item", ""]})
+  async findBidsByBider(bidderId: string): Promise<Bidding[]> {
+    return this.biddingsRepository.find({
+      where: {
+        bidderId,
+      },
+      relations: ['auction', 'auction.item', ''],
+    });
   }
-  
 }

@@ -45,7 +45,7 @@ export class ItemsService {
         title: createItem.title,
         description: createItem.description,
         imageURL,
-        seller: { id: sellerId },
+        sellerId,
       });
       const savedItem = await this.itemsRepository.save(item);
       return savedItem;
@@ -74,11 +74,9 @@ export class ItemsService {
   async findBySeller(sellerId: string): Promise<Item[]> {
     const items = await this.itemsRepository.find({
       select: ['id', 'title', 'description'],
-      where: { seller: { id: sellerId } },
+      where: { sellerId },
       relations: ['seller'],
     });
-    if (!items.length)
-      throw new NotFoundException(`No items found of seller : ${sellerId}`);
     return items;
   }
 
@@ -96,12 +94,11 @@ export class ItemsService {
   async findMyItemsWithoutAuction(userId: string): Promise<Item[]> {
     const empty_items = await this.itemsRepository.find({
       where: {
-        seller: { id: userId },
+        sellerId: userId,
         auction: { id: IsNull() },
       },
       relations: ['seller', 'auction'],
     });
-    console.log('Empty Items', empty_items);
     return empty_items;
   }
 

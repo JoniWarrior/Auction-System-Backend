@@ -38,6 +38,9 @@ export class Auction {
   @JoinColumn({ name: 'itemId' })
   item: Item;
 
+  @Column({name : "itemId"})
+  readonly itemId : string
+
   @OneToMany(() => Bidding, (bidding) => bidding.auction, {
     onDelete: 'CASCADE',
   })
@@ -46,6 +49,9 @@ export class Auction {
   @OneToOne(() => Bidding, { nullable: true })
   @JoinColumn({ name: 'winnerBidId' })
   winningBid: Bidding;
+
+  @Column({name : "winnerBidId", nullable : true})
+  readonly winningBidId : string
 
   @DeleteDateColumn()
   deletedAt?: Date;
