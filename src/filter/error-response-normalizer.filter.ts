@@ -8,27 +8,7 @@ import {
 import { ValidationError } from 'joi';
 import { Response } from 'express';
 import moment from 'moment';
-
-export const normalizeResponse = (res: any) => {
-  let message = '';
-  let data = {};
-  let errors = [];
-
-  if (res._message) {
-    message = res._message;
-    delete res._message;
-  }
-  if (res._errors) {
-    errors = res._errors;
-    delete res._errors;
-  }
-  data = res;
-  return {
-    message,
-    data,
-    errors,
-  };
-};
+import { normalizeResponse } from '../util/helper/response.helpers';
 
 export class ErrorResponseNormalizerFilter
   implements ExceptionFilter<HttpException>
