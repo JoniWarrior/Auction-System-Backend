@@ -11,13 +11,12 @@ import {
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/guards/auth.guards';
 import { UsersService } from './users.service';
-import { type CreateUser } from './types/create-user.type';
-import { type UpdateUser } from './types/update-user.type';
-import { type PaginationQuery } from './types/find-users-query.type';
+import { type CreateUser } from 'src/def/types/user/create-user.type';
+import { type PaginationQuery } from 'src/def/types/user/find-users-query';
 import Joi from 'joi';
 import { ValidationPipe } from 'src/pipes/joi-validator.pipe';
-import { UserRole } from '../../def/enums/user_role.enum';
-
+import { UserRole } from 'src/def/enums/user_role_status';
+import type { UpdateUser } from 'src/def/types/user/update-user.type';
 @Controller('users')
 @UseGuards(JwtAuthGuard)
 export class UsersController {

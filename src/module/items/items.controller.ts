@@ -9,10 +9,11 @@ import {
   UseGuards,
   UseInterceptors,
   UploadedFile,
+  Query,
 } from '@nestjs/common';
 import { ItemsService } from './items.service';
-import { type CreateItem } from './types/create-item.type';
-import { type UpdateItem } from './types/update-item.type';
+import { type CreateItem } from 'src/def/types/item/create-item.type';
+import { type UpdateItem } from 'src/def/types/item/update-item.type';
 import { JwtAuthGuard } from '../../auth/guards/auth.guards';
 import { Roles, RolesGuard } from '../../auth/guards/roles.guards';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -20,6 +21,8 @@ import * as multer from 'multer';
 import { ValidationPipe } from 'src/pipes/joi-validator.pipe';
 import Joi from 'joi';
 import { CurrentLoggedInUser } from 'src/decorator/current-user.decorator';
+// import { type PaginationQuery } from './types/find-item.type';
+import { type PaginationQuery } from 'src/def/types/item/find-item.type';
 
 @Controller('items')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -49,9 +52,20 @@ export class ItemsController {
   }
 
   @Get()
-  findAll() {
-    return this.itemsService.findAll();
-  }
+    findItems(
+      @Query(
+        ValidationPipe.from(
+          Joi.object({
+            qs: Joi.string(),
+            page: Joi.number().positive().default(1),
+            pageSize: Joi.number().positive().default(10),
+          }),
+        ),
+      )
+      query: PaginationQuery,
+    ) {
+      return this.itemsService.findAll(query);
+    }
 
   @Get('/my-empty-items')
   findMyEmptyItems(@CurrentLoggedInUser('id') sellerId: string) {

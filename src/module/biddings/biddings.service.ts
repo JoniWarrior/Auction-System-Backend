@@ -4,16 +4,16 @@ import {
   BadRequestException,
   Inject,
 } from '@nestjs/common';
-import { CreateBidding } from './types/create-bidding.type';
-import { UpdateBidding } from './types/update-bidding.type';
+import { CreateBidding } from 'src/def/types/bidding/create-bidding.type';
+import { UpdateBidding } from 'src/def/types/bidding/update-bidding.type';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Bidding } from '../../entity/bidding.entity';
-import { Repository } from 'typeorm';
+import { ILike, Repository } from 'typeorm';
 import { Auction } from '../../entity/auction.entity';
 import { BiddingsGateway } from './biddings-gateway';
 import { AuctionBiddingHelperService } from '../shared/auction-bidding-helper.service';
 import { User } from 'src/entity/user.entity';
-
+import { PaginationQuery } from 'src/def/types/bidding/find-bidding.type';
 @Injectable()
 export class BiddingsService {
   constructor(
@@ -33,7 +33,6 @@ export class BiddingsService {
       ? Math.max(...auction.biddings.map((b) => b.amount))
       : auction.startingPrice;
   }
-
 
   // Version 2 :
   async create(
@@ -99,12 +98,14 @@ export class BiddingsService {
     return fullBid;
   }
 
-  async findAll(): Promise<Bidding[]> {
-    const biddings = await this.biddingsRepository.find({
+  async findAll({ qs, pageSize, page }: PaginationQuery): Promise<Bidding[]> {
+    return this.biddingsRepository.find({
+      where: [{ auctionId: ILike(`%${qs}%`) }, { bidderId: ILike(`${qs}`) }],
       relations: ['auction', 'bidder'],
-      order: { amount: 'DESC' },
+      take: pageSize,
+      skip: (page - 1) * pageSize,
+      order: { amount: 'ASC' },
     });
-    return biddings;
   }
 
   async findOne(id: string): Promise<Bidding> {
@@ -131,8 +132,11 @@ export class BiddingsService {
   }
 
   async delete(id: string) {
-    const existingBid = await this.biddingsRepository.findOne({where : {id}});
-    if (!existingBid) throw new NotFoundException(`Bidding with Id: ${id} not found!`)
+    const existingBid = await this.biddingsRepository.findOne({
+      where: { id },
+    });
+    if (!existingBid)
+      throw new NotFoundException(`Bidding with Id: ${id} not found!`);
     await this.biddingsRepository.softDelete(id);
     return { message: `Bidding ${id} has been soft-deleted` };
   }

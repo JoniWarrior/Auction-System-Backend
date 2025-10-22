@@ -1,12 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, ILike, FindOptionsWhere } from 'typeorm';
+import { Repository, ILike } from 'typeorm';
 import { User } from '../../entity/user.entity';
-import { CreateUser } from './types/create-user.type';
-import { UpdateUser } from './types/update-user.type';
+import { CreateUser } from 'src/def/types/user/create-user.type';
+import { UpdateUser } from 'src/def/types/user/update-user.type';
 import { NotFoundException } from '@nestjs/common';
-import { PaginationQuery } from './types/find-users-query.type';
-import { UserRole } from '../../def/enums/user_role.enum';
+import { PaginationQuery } from 'src/def/types/user/find-users-query';
+import { UserRole } from 'src/def/enums/user_role_status';
 
 @Injectable()
 export class UsersService {
@@ -54,21 +54,19 @@ export class UsersService {
   }
 
   async delete(id: string) {
-    const existingUser = await this.usersRepository.findOne({where : {id}});
-    if (!existingUser) throw new NotFoundException(`User with Id: ${id} not found!`);
+    const existingUser = await this.usersRepository.findOne({ where: { id } });
+    if (!existingUser)
+      throw new NotFoundException(`User with Id: ${id} not found!`);
     await this.usersRepository.softDelete(id);
     return { message: `User ${id} has been soft-deleted` };
   }
 
   async findAll({ qs, pageSize, page }: PaginationQuery): Promise<User[]> {
     return this.usersRepository.find({
-      where: {
-        email: ILike(`%${qs}%`),
-        name: ILike(`%${qs}%`),
-      },
+      where: [{ email: ILike(`%${qs}%`) }, { name: ILike(`%${qs}%`) }],
       take: pageSize,
       skip: (page - 1) * pageSize,
       order: { name: 'ASC' },
     });
-  }
+  } // do in an array
 }
