@@ -36,12 +36,16 @@ export class AuthService {
             ...createUser,
             password : hashedPassword
         });
-
-        const payload = {id : user.id, email : user.email, role : user.role, name : user.name};
+        // const payload = {id : user.id, email : user.email, role : user.role, name : user.name};
+        const payload = {id : user.id, email : user.email, name : user.name};
         const token = this.jwtService.sign(payload);
 
+        // return {
+        //     user : {id : user.id, email : user.email, name : user.name, role : user.role},
+        //     token
+        // };
         return {
-            user : {id : user.id, email : user.email, name : user.name, role : user.role},
+            user : {id : user.id, email : user.email, name : user.name},
             token
         };
     }
@@ -53,7 +57,8 @@ async login(email: string, password: string) {
   const match = await bcrypt.compare(password, existingUser.password);
   if (!match) throw new UnauthorizedException("Invalid credentials");
 
-  const payload = { id: existingUser.id, email: existingUser.email, role: existingUser.role, name : existingUser.name};
+//   const payload = { id: existingUser.id, email: existingUser.email, role: existingUser.role, name : existingUser.name};
+  const payload = { id: existingUser.id, email: existingUser.email, name : existingUser.name};
   const token = this.jwtService.sign(payload);
 
   return {
@@ -61,7 +66,7 @@ async login(email: string, password: string) {
       id: existingUser.id,
       email: existingUser.email,
       name: existingUser.name,
-      role: existingUser.role,
+    //   role: existingUser.role,
     },
     token,
   };

@@ -11,7 +11,7 @@ import {
 } from 'typeorm';
 import { Item } from './item.entity';
 import { Bidding } from './bidding.entity';
-import { AuctionStatus } from 'src/def/enums/auction_status';
+import { AuctionStatus } from "../def/enums/auction_status";
 
 @Entity('auctions')
 @Index(['status', 'endTime'])

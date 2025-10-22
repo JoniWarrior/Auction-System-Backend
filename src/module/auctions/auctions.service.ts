@@ -8,7 +8,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 // import { type UpdateAuction } from 'src/def/types/auctionTypes/update-auction';
 import { AuctionBiddingHelperService } from '../shared/auction-bidding-helper.service';
 import { AuctionStatus } from 'src/def/enums/auction_status';
-import { PaginationQuery } from 'src/def/types/user/find-users-query';
+import { PaginationQuery } from 'src/def/pagination-query';
 import moment from 'moment';
 
 @Injectable()

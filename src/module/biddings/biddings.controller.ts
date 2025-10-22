@@ -13,12 +13,11 @@ import { BiddingsService } from './biddings.service';
 import { type CreateBidding } from 'src/def/types/bidding/create-bidding.type';
 import { type UpdateBidding } from 'src/def/types/bidding/update-bidding.type';
 import { JwtAuthGuard } from '../../auth/guards/auth.guards';
-import { Roles, RolesGuard } from '../../auth/guards/roles.guards';
+// import { Roles, RolesGuard } from '../../auth/guards/roles.guards';
 import Joi from 'joi';
 import { ValidationPipe } from 'src/pipes/joi-validator.pipe';
 import { CurrentLoggedInUser } from 'src/decorator/current-user.decorator';
-// import { type PaginationQuery } from './types/find-bidding.type';
-import { type PaginationQuery } from 'src/def/types/bidding/find-bidding.type';
+import { type PaginationQuery } from 'src/def/pagination-query';
 @Controller('biddings')
 @UseGuards(JwtAuthGuard)
 export class BiddingsController {
@@ -68,8 +67,8 @@ export class BiddingsController {
   }
 
   @Patch(':id')
-  @Roles('bidder')
-  @UseGuards(RolesGuard)
+  // @Roles('bidder')
+  // @UseGuards(RolesGuard)
   update(
     @Param('id') id: string,
     @Body(
@@ -87,8 +86,8 @@ export class BiddingsController {
   }
 
   @Delete(':id')
-  @Roles('bidder')
-  @UseGuards(RolesGuard)
+  // @Roles('bidder')
+  // @UseGuards(RolesGuard)
   remove(@Param('id') id: string) {
     return this.biddingsService.delete(id);
   }

@@ -9,7 +9,7 @@ import { UpdateItem } from 'src/def/types/item/update-item.type';
 import { Item } from '../../entity/item.entity';
 import { ILike, IsNull, Repository } from 'typeorm';
 import { v2 as cloudinary } from 'cloudinary';
-import { PaginationQuery } from 'src/def/types/item/find-item.type';
+import { PaginationQuery } from 'src/def/pagination-query';
 
 @Injectable()
 export class ItemsService {

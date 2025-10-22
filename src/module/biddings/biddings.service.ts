@@ -13,7 +13,7 @@ import { Auction } from '../../entity/auction.entity';
 import { BiddingsGateway } from './biddings-gateway';
 import { AuctionBiddingHelperService } from '../shared/auction-bidding-helper.service';
 import { User } from 'src/entity/user.entity';
-import { PaginationQuery } from 'src/def/types/bidding/find-bidding.type';
+import { PaginationQuery } from 'src/def/pagination-query';
 @Injectable()
 export class BiddingsService {
   constructor(
