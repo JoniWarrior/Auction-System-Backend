@@ -3,6 +3,7 @@ import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { ErrorResponseNormalizerFilter } from './filter/error-response-normalizer.filter';
 import { AuditInterceptor } from 'src/interceptor/main.interceptor';
+import { ResponseNormalizerInterceptor } from './interceptor/response-normalizer.interceptor';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -24,6 +25,7 @@ async function bootstrap() {
   });
 
   app.useGlobalFilters(new ErrorResponseNormalizerFilter());
+  app.useGlobalInterceptors(new ResponseNormalizerInterceptor());
 
   const port = process.env.PORT || 3000;
   await app.listen(port);
