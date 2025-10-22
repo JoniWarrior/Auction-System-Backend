@@ -3,7 +3,7 @@ import { User } from '../entity/user.entity';
 import { UsersService } from '../module/users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from "bcrypt";
-import type { CreateUser } from '../module/users/types/create-user.type';
+import { type CreateUser } from 'src/def/types/user/create-user.type';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 

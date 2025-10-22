@@ -1,7 +1,6 @@
 import { Controller, Post, Body} from '@nestjs/common';
 import { AuthService } from './auth.service';
-import type { CreateUser } from '../module/users/types/create-user.type';
-
+import { type CreateUser } from 'src/def/types/user/create-user.type';
 @Controller('auth')
 export class AuthController {
     constructor(

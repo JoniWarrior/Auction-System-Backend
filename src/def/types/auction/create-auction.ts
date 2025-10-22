@@ -3,5 +3,3 @@ export type CreateAuction = {
     endTime : Date
     itemId : string
 };
-
-

@@ -4,11 +4,12 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { CreateItem } from './types/create-item.type';
-import { UpdateItem } from './types/update-item.type';
+import { CreateItem } from 'src/def/types/item/create-item.type';
+import { UpdateItem } from 'src/def/types/item/update-item.type';
 import { Item } from '../../entity/item.entity';
-import { IsNull, Repository } from 'typeorm';
+import { ILike, IsNull, Repository } from 'typeorm';
 import { v2 as cloudinary } from 'cloudinary';
+import { PaginationQuery } from 'src/def/types/item/find-item.type';
 
 @Injectable()
 export class ItemsService {
@@ -55,11 +56,22 @@ export class ItemsService {
     }
   }
 
-  async findAll(): Promise<Item[]> {
-    const items = await this.itemsRepository.find({ relations: ['seller'] });
-    if (items.length === 0)
-      throw new NotFoundException('No items found in the DB');
-    return items;
+  // async findAll({qs, pageSize, page} : PaginationQuery): Promise<Item[]> {
+  //   const items = await this.itemsRepository.find({ relations: ['seller'] });
+  //   return items;
+  // }
+  async findAll({ qs, pageSize, page }: PaginationQuery): Promise<Item[]> {
+    return this.itemsRepository.find({
+      where: [
+        { title: ILike(`%${qs}%`) },
+        { description: ILike(`%${qs}%`) },
+        { imageURL: ILike(`%${qs}%`) },
+      ],
+      relations: ['seller'],
+      take: pageSize,
+      skip: (page - 1) * pageSize,
+      order: { title: 'ASC' },
+    });
   }
 
   async findOne(id: string): Promise<Item> {
@@ -87,8 +99,9 @@ export class ItemsService {
   }
 
   async delete(id: string) {
-    const existingItem = await this.itemsRepository.findOne({where : {id}});
-    if (!existingItem) throw new NotFoundException(`Item with Id: ${id} not found! `)
+    const existingItem = await this.itemsRepository.findOne({ where: { id } });
+    if (!existingItem)
+      throw new NotFoundException(`Item with Id: ${id} not found! `);
     await this.itemsRepository.softDelete(id);
     return { message: `Item ${id} has been soft-deleted` };
   }

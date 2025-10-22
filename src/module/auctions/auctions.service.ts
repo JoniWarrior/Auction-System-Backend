@@ -1,13 +1,14 @@
 import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Not, Repository, LessThan, FindOptionsWhere } from 'typeorm';
-import { CreateAuction } from './types/create-auction.type';
+import { Not, Repository, LessThan } from 'typeorm';
+import { CreateAuction } from 'src/def/types/auction/create-auction';
 import { Auction } from '../../entity/auction.entity';
 import { Bidding } from '../../entity/bidding.entity';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { FindAuctionsFilter } from './types/auctions-filter.type';
+// import { type UpdateAuction } from 'src/def/types/auctionTypes/update-auction';
 import { AuctionBiddingHelperService } from '../shared/auction-bidding-helper.service';
-import { AuctionStatus } from '../../def/enums/auction_status.enum';
+import { AuctionStatus } from 'src/def/enums/auction_status';
+import { PaginationQuery } from 'src/def/types/user/find-users-query';
 import moment from 'moment';
 
 @Injectable()
@@ -55,24 +56,33 @@ export class AuctionsService {
     return this.auctionsRepository.save(auction);
   }
 
-  async findAll(filters: FindAuctionsFilter): Promise<Auction[]> {
-    const where: FindOptionsWhere<Auction> = {};
-    if (filters.status) where.status = filters.status;
+  // async findAll(filters: FindAuctionsFilter): Promise<Auction[]> {
+  //   const where: FindOptionsWhere<Auction> = {};
+  //   if (filters.status) where.status = filters.status;
 
-    const limit = filters.limit ?? 8;
-    const page = filters.page ?? 1;
-    const skip = (page - 1) * limit;
+  //   const limit = filters.limit ?? 8;
+  //   const page = filters.page ?? 1;
+  //   const skip = (page - 1) * limit;
 
-    const auctions = await this.auctionsRepository.find({
-      where,
-      take: limit,
-      skip,
-      order: { endTime: 'DESC' },
-      relations: ['item', 'item.seller', 'biddings', 'winningBid'],
-    });
+  //   const auctions = await this.auctionsRepository.find({
+  //     where,
+  //     take: limit,
+  //     skip,
+  //     order: { endTime: 'DESC' },
+  //     relations: ['item', 'item.seller', 'biddings', 'winningBid'],
+  //   });
 
-    return auctions;
-  }
+  //   return auctions;
+  // }
+
+  async findAll({ qs, pageSize, page }: PaginationQuery): Promise<Auction[]> {
+      return this.auctionsRepository.find({
+        relations: ['item', 'item.seller'],
+        take: pageSize,
+        skip: (page - 1) * pageSize,
+        order: { startingPrice: 'ASC' },
+      });
+    }
 
   async findMyAuctionsAsSeller(sellerId: string): Promise<Auction[]> {
     return this.auctionsRepository.find({

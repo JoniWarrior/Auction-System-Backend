@@ -10,15 +10,17 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { AuctionsService } from './auctions.service';
-import { type CreateAuction } from './types/create-auction.type';
-import { type UpdateAuction } from './types/update-auction.type';
+import { type CreateAuction } from 'src/def/types/auction/create-auction';
+import { type UpdateAuction } from 'src/def/types/auction/update-auction';
 import { JwtAuthGuard } from 'src/auth/guards/auth.guards';
 import { Roles, RolesGuard } from 'src/auth/guards/roles.guards';
-import { type FindAuctionsFilter } from './types/auctions-filter.type';
+// import { type FindAuctionsFilter } from './types/auctions-filter.type';
 import { ValidationPipe } from 'src/pipes/joi-validator.pipe';
 import Joi from 'joi';
 import { CurrentLoggedInUser } from 'src/decorator/current-user.decorator';
-import { AuctionStatus } from '../../def/enums/auction_status.enum';
+import { AuctionStatus } from 'src/def/enums/auction_status';
+// import { type PaginationQuery } from '../../def/enums/types/userTypes.ts/auctionsTypes.ts/auctions-filter.type';
+import { type PaginationQuery } from 'src/def/types/user/find-users-query';
 
 @Controller('auctions')
 export class AuctionsController {
@@ -67,9 +69,9 @@ export class AuctionsController {
         }),
       ),
     )
-    filters: FindAuctionsFilter,
+    query : PaginationQuery
   ) {
-    return this.auctionsService.findAll(filters);
+    return this.auctionsService.findAll(query);
   }
 
   @Get(':id')

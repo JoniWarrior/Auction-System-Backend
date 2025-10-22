@@ -3,4 +3,3 @@ export type CreateBidding = {
   auctionId: string;
   bidderId: string;
 };
-

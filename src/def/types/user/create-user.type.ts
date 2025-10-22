@@ -1,5 +1,4 @@
-import { UserRole } from '../../../def/enums/user_role.enum';
-
+import { UserRole } from 'src/def/enums/user_role_status';
 export type CreateUser = {
   name: string;
   email: string;
@@ -7,4 +6,3 @@ export type CreateUser = {
   confirmPassword: string;
   role: UserRole;
 };
-
