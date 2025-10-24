@@ -34,7 +34,6 @@ export class BiddingsService {
       : auction.startingPrice;
   }
 
-  // Version 2 :
   async create(
     createBidding: CreateBidding,
     bidderId: string,
@@ -42,7 +41,6 @@ export class BiddingsService {
     const { auctionId, amount } = createBidding;
 
     const auction = await this.helperService.validateAuctionForBidding(
-      // auction : {id : auctionId}
       auctionId,
       bidderId,
     );

@@ -56,10 +56,6 @@ export class ItemsService {
     }
   }
 
-  // async findAll({qs, pageSize, page} : PaginationQuery): Promise<Item[]> {
-  //   const items = await this.itemsRepository.find({ relations: ['seller'] });
-  //   return items;
-  // }
   async findAll({ qs, pageSize, page }: PaginationQuery): Promise<Item[]> {
     return this.itemsRepository.find({
       where: [

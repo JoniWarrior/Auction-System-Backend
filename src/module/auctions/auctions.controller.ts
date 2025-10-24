@@ -14,12 +14,10 @@ import { type CreateAuction } from 'src/def/types/auction/create-auction';
 import { type UpdateAuction } from 'src/def/types/auction/update-auction';
 import { JwtAuthGuard } from 'src/auth/guards/auth.guards';
 // import { Roles, RolesGuard } from 'src/auth/guards/roles.guards';
-// import { type FindAuctionsFilter } from './types/auctions-filter.type';
 import { ValidationPipe } from 'src/pipes/joi-validator.pipe';
-import Joi, { StringSchema } from 'joi';
+import Joi from 'joi';
 import { CurrentLoggedInUser } from 'src/decorator/current-user.decorator';
 import { AuctionStatus } from 'src/def/enums/auction_status';
-// import { type PaginationQuery } from '../../def/enums/types/userTypes.ts/auctionsTypes.ts/auctions-filter.type';
 import { type PaginationQuery } from 'src/def/pagination-query';
 @Controller('auctions')
 export class AuctionsController {
@@ -58,21 +56,6 @@ export class AuctionsController {
     return this.auctionsService.findMyAuctionsAsBidder(bidderId);
   }
 
-  // @Get()
-  // async findAll(
-  //   @Query(
-  //     ValidationPipe.from(
-  //       Joi.object({
-  //         status: Joi.string().valid(...Object.values(AuctionStatus)),
-  //         limit: Joi.number(),
-  //         page: Joi.number(),
-  //       }),
-  //     ),
-  //   )
-  //   query : PaginationQuery
-  // ) {
-  //   return this.auctionsService.findAll(query);
-  // }
   @Get()
   async findAll(
     @Query(

@@ -5,7 +5,6 @@ import { CreateAuction } from 'src/def/types/auction/create-auction';
 import { Auction } from '../../entity/auction.entity';
 import { Bidding } from '../../entity/bidding.entity';
 import { Cron, CronExpression } from '@nestjs/schedule';
-// import { type UpdateAuction } from 'src/def/types/auctionTypes/update-auction';
 import { AuctionBiddingHelperService } from '../shared/auction-bidding-helper.service';
 import { AuctionStatus } from 'src/def/enums/auction_status';
 import { PaginationQuery } from 'src/def/pagination-query';
@@ -49,21 +48,11 @@ export class AuctionsService {
       startingPrice,
       endTime,
       currentPrice: startingPrice,
-      // item: { id: itemId },
       itemId,
     });
 
     return this.auctionsRepository.save(auction);
   }
-
-  // async findAll({ qs, pageSize, page }: PaginationQuery): Promise<Auction[]> {
-  //     return this.auctionsRepository.find({
-  //       relations: ['item', 'item.seller'],
-  //       take: pageSize,
-  //       skip: (page - 1) * pageSize,
-  //       order: { startingPrice: 'ASC' },
-  //     });
-  //   }
 
   async findAll({ qs, pageSize, page, }: PaginationQuery, status: any): Promise<Auction[]> {
     const take = Number(pageSize) || 10;

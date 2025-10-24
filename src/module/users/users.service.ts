@@ -6,7 +6,6 @@ import { CreateUser } from 'src/def/types/user/create-user.type';
 import { UpdateUser } from 'src/def/types/user/update-user.type';
 import { NotFoundException } from '@nestjs/common';
 import { PaginationQuery } from 'src/def/pagination-query';
-// import { UserRole } from 'src/def/enums/user_role_status';
 
 @Injectable()
 export class UsersService {
@@ -24,7 +23,6 @@ export class UsersService {
   async create(createUser: CreateUser): Promise<User> {
     const user = this.usersRepository.create({
       ...createUser,
-      // role: createUser.role || UserRole.BIDDER,
     });
     return this.usersRepository.save(user);
   }
@@ -68,5 +66,5 @@ export class UsersService {
       skip: (page - 1) * pageSize,
       order: { name: 'ASC' },
     });
-  } // do in an array
+  }
 }

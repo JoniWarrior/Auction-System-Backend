@@ -32,9 +32,6 @@ export class UsersController {
           email: Joi.string().email().required(),
           password: Joi.string().required().min(8),
           confirmPassword: Joi.string().required().min(8),
-          // role: Joi.string()
-          //   .valid(...Object.values(UserRole))
-          //   .required(),
         }),
       ),
     )
@@ -74,9 +71,6 @@ export class UsersController {
           email: Joi.string().email().required(),
           password: Joi.string().required().min(8),
           confirmPassword: Joi.string().required().min(8),
-          // role: Joi.string()
-          //   .valid(...Object.values(UserRole))
-          //   .required(),
         }),
       ),
     )
