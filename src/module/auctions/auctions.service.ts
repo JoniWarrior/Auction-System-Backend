@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Not, Repository, LessThan } from 'typeorm';
+import { Not, Repository, LessThan, FindOptionsWhere } from 'typeorm';
 import { CreateAuction } from 'src/def/types/auction/create-auction';
 import { Auction } from '../../entity/auction.entity';
 import { Bidding } from '../../entity/bidding.entity';
@@ -50,39 +50,36 @@ export class AuctionsService {
       endTime,
       currentPrice: startingPrice,
       // item: { id: itemId },
-      itemId
+      itemId,
     });
 
     return this.auctionsRepository.save(auction);
   }
 
-  // async findAll(filters: FindAuctionsFilter): Promise<Auction[]> {
-  //   const where: FindOptionsWhere<Auction> = {};
-  //   if (filters.status) where.status = filters.status;
+  // async findAll({ qs, pageSize, page }: PaginationQuery): Promise<Auction[]> {
+  //     return this.auctionsRepository.find({
+  //       relations: ['item', 'item.seller'],
+  //       take: pageSize,
+  //       skip: (page - 1) * pageSize,
+  //       order: { startingPrice: 'ASC' },
+  //     });
+  //   }
 
-  //   const limit = filters.limit ?? 8;
-  //   const page = filters.page ?? 1;
-  //   const skip = (page - 1) * limit;
+  async findAll({ qs, pageSize, page, }: PaginationQuery, status: any): Promise<Auction[]> {
+    const take = Number(pageSize) || 10;
+    const skip = ((Number(page) || 1) - 1) * take;
 
-  //   const auctions = await this.auctionsRepository.find({
-  //     where,
-  //     take: limit,
-  //     skip,
-  //     order: { endTime: 'DESC' },
-  //     relations: ['item', 'item.seller', 'biddings', 'winningBid'],
-  //   });
+    const where: FindOptionsWhere<Auction> = {};
+    where.status = status;
 
-  //   return auctions;
-  // }
-
-  async findAll({ qs, pageSize, page }: PaginationQuery): Promise<Auction[]> {
-      return this.auctionsRepository.find({
-        relations: ['item', 'item.seller'],
-        take: pageSize,
-        skip: (page - 1) * pageSize,
-        order: { startingPrice: 'ASC' },
-      });
-    }
+    return this.auctionsRepository.find({
+      relations: ['item', 'item.seller'],
+      take,
+      skip,
+      where,
+      order: { startingPrice: 'ASC' },
+    });
+  }
 
   async findMyAuctionsAsSeller(sellerId: string): Promise<Auction[]> {
     return this.auctionsRepository.find({
@@ -122,8 +119,11 @@ export class AuctionsService {
   }
 
   async delete(id: string) {
-    const existingAuction = await this.auctionsRepository.findOne({where : {id}});
-    if (!existingAuction) throw new NotFoundException(`Auction with Id: ${id} not found`)
+    const existingAuction = await this.auctionsRepository.findOne({
+      where: { id },
+    });
+    if (!existingAuction)
+      throw new NotFoundException(`Auction with Id: ${id} not found`);
     await this.auctionsRepository.softDelete(id);
     return { message: `Auction ${id} has been soft-deleted` };
   }

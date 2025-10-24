@@ -16,7 +16,7 @@ import { JwtAuthGuard } from 'src/auth/guards/auth.guards';
 // import { Roles, RolesGuard } from 'src/auth/guards/roles.guards';
 // import { type FindAuctionsFilter } from './types/auctions-filter.type';
 import { ValidationPipe } from 'src/pipes/joi-validator.pipe';
-import Joi from 'joi';
+import Joi, { StringSchema } from 'joi';
 import { CurrentLoggedInUser } from 'src/decorator/current-user.decorator';
 import { AuctionStatus } from 'src/def/enums/auction_status';
 // import { type PaginationQuery } from '../../def/enums/types/userTypes.ts/auctionsTypes.ts/auctions-filter.type';
@@ -24,7 +24,6 @@ import { type PaginationQuery } from 'src/def/pagination-query';
 @Controller('auctions')
 export class AuctionsController {
   constructor(private readonly auctionsService: AuctionsService) {}
-
 
   // @Roles('seller')
   // @UseGuards(JwtAuthGuard, RolesGuard)
@@ -59,20 +58,41 @@ export class AuctionsController {
     return this.auctionsService.findMyAuctionsAsBidder(bidderId);
   }
 
+  // @Get()
+  // async findAll(
+  //   @Query(
+  //     ValidationPipe.from(
+  //       Joi.object({
+  //         status: Joi.string().valid(...Object.values(AuctionStatus)),
+  //         limit: Joi.number(),
+  //         page: Joi.number(),
+  //       }),
+  //     ),
+  //   )
+  //   query : PaginationQuery
+  // ) {
+  //   return this.auctionsService.findAll(query);
+  // }
   @Get()
   async findAll(
     @Query(
       ValidationPipe.from(
         Joi.object({
           status: Joi.string().valid(...Object.values(AuctionStatus)),
-          limit: Joi.number(),
+          pageSize: Joi.number(),
           page: Joi.number(),
+          qs: Joi.string(),
         }),
       ),
     )
-    query : PaginationQuery
+    query: PaginationQuery & {status: string},
   ) {
-    return this.auctionsService.findAll(query);
+    const { pageSize, page = 1, qs, status } = query;
+    return this.auctionsService.findAll({
+      page: Number(page),
+      pageSize: Number(pageSize) || 10,
+      qs,
+    }, status);
   }
 
   @Get(':id')
@@ -102,7 +122,7 @@ export class AuctionsController {
   @UseGuards(JwtAuthGuard)
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.auctionsService.  delete(id);
+    return this.auctionsService.delete(id);
   }
 
   @UseGuards(JwtAuthGuard)

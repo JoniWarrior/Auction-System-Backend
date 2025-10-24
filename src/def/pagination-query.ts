@@ -1,5 +1,5 @@
 export type PaginationQuery = {
-  qs: string;
+  qs: Record<string, any>;
   page: number;
   pageSize: number;
 };
