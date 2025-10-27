@@ -10,15 +10,18 @@ export class NotificationsController {
     return this.notificationsService.findUserNotifications(userId);
   }
 
+  @Get(':userId/unread')
+  async getUserUnreadNotifications(@Param('userId') userId: string) {
+    return this.notificationsService.findUnreadUserNotifications(userId);
+  }
+
   @Patch(':id/read')
   async markAsRead(@Param('id') id: string) {
     return this.notificationsService.markAsRead(id);
   }
 
-  @Delete(":id")
-  remove(@Param("id") id : string) {
+  @Delete(':id')
+  remove(@Param('id') id: string) {
     return this.notificationsService.delete(id);
   }
-
-
 }

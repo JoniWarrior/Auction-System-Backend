@@ -26,6 +26,13 @@ export class NotificationsService {
     });
   }
 
+  async findUnreadUserNotifications(userId: string) {
+    return await this.notificationsRepo.find({
+      where: { userId, isRead: false },
+      order: { createdAt: 'DESC' },
+    });
+  }
+
   async markAsRead(id: string) {
     return this.notificationsRepo.update(id, { isRead: true });
   }
