@@ -8,7 +8,6 @@ import {
 } from 'typeorm';
 import { Item } from './item.entity';
 import { Bidding } from './bidding.entity';
-// import { UserRole } from 'src/def/enums/user_role_status';
 
 @Entity()
 export class User {
@@ -24,15 +23,11 @@ export class User {
   @Column()
   password: string;
 
-  // @Column({
-  //   type: 'enum',
-  //   enum: UserRole,
-  //   default: UserRole.BIDDER,
-  // })
-  // role: UserRole;
-
   @CreateDateColumn()
   createdAt: Date;
+
+  @Column({ nullable: true })
+  accessToken: string;
 
   @OneToMany(() => Item, (item) => item.seller, { onDelete: 'CASCADE' })
   items: Item[];
