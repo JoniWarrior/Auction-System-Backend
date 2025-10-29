@@ -6,9 +6,10 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from '../entity/user.entity';
 import { JwtAuthGuard } from './guard/jwt-auth.guard';
 import { JwtAuthStrategy } from './strategy/jwt-auth.strategy';
+import { JWT } from '../dynamic-module/jwt';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([User]), UsersModule],
+  imports: [TypeOrmModule.forFeature([User]), UsersModule, JWT],
   providers: [AuthService, JwtAuthGuard, JwtAuthStrategy],
   controllers: [AuthController],
   exports: [AuthService, JwtAuthGuard],

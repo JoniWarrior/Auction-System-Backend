@@ -14,9 +14,9 @@ import { InjectRepository } from '@nestjs/typeorm';
 @Injectable()
 export class AuthService {
   constructor(
-    private usersService: UsersService,
-    @InjectRepository(User) private usersRepository: Repository<User>,
-    private jwtService: JwtService,
+    private readonly usersService: UsersService,
+    @InjectRepository(User) private readonly usersRepository: Repository<User>,
+    private readonly jwtService: JwtService,
   ) {}
 
   async register(createUser: CreateUser) {
