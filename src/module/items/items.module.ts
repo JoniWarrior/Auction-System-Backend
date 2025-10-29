@@ -4,13 +4,11 @@ import { ItemsController } from './items.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Item } from '../../entity/item.entity';
 import { User } from '../../entity/user.entity';
-import { JwtAuthModule } from '../../auth/guards/jwt-auth.module';
 import { CloudinaryConfig } from 'cloudinary.config';
 import { UsersModule } from 'src/module/users/users.module';
 @Module({
   imports: [
     TypeOrmModule.forFeature([Item, User]),
-    JwtAuthModule,
     forwardRef(() => UsersModule),
   ],
   controllers: [ItemsController],

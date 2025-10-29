@@ -12,7 +12,7 @@ import {
 import { AuctionsService } from './auctions.service';
 import { type CreateAuction } from 'src/def/types/auction/create-auction';
 import { type UpdateAuction } from 'src/def/types/auction/update-auction';
-import { JwtAuthGuard } from 'src/auth/guards/auth.guards';
+import { JwtAuthGuard } from 'src/auth/guard/jwt-auth.guard';
 // import { Roles, RolesGuard } from 'src/auth/guards/roles.guards';
 import { ValidationPipe } from 'src/pipes/joi-validator.pipe';
 import Joi from 'joi';
@@ -68,14 +68,17 @@ export class AuctionsController {
         }),
       ),
     )
-    query: PaginationQuery & {status: string},
+    query: PaginationQuery & { status: string },
   ) {
     const { pageSize, page = 1, qs, status } = query;
-    return this.auctionsService.findAll({
-      page: Number(page),
-      pageSize: Number(pageSize) || 10,
-      qs,
-    }, status);
+    return this.auctionsService.findAll(
+      {
+        page: Number(page),
+        pageSize: Number(pageSize) || 10,
+        qs,
+      },
+      status,
+    );
   }
 
   @Get(':id')

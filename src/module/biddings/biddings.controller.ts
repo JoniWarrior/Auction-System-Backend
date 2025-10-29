@@ -12,7 +12,7 @@ import {
 import { BiddingsService } from './biddings.service';
 import { type CreateBidding } from 'src/def/types/bidding/create-bidding.type';
 import { type UpdateBidding } from 'src/def/types/bidding/update-bidding.type';
-import { JwtAuthGuard } from '../../auth/guards/auth.guards';
+import { JwtAuthGuard } from '../../auth/guard/jwt-auth.guard';
 // import { Roles, RolesGuard } from '../../auth/guards/roles.guards';
 import Joi from 'joi';
 import { ValidationPipe } from 'src/pipes/joi-validator.pipe';
@@ -41,20 +41,20 @@ export class BiddingsController {
   }
 
   @Get()
-    findUsers(
-      @Query(
-        ValidationPipe.from(
-          Joi.object({
-            qs: Joi.string().required(),
-            page: Joi.number().positive().default(1),
-            pageSize: Joi.number().positive().default(10),
-          }),
-        ),
-      )
-      query: PaginationQuery,
-    ) {
-      return this.biddingsService.findAll(query);
-    }
+  findUsers(
+    @Query(
+      ValidationPipe.from(
+        Joi.object({
+          qs: Joi.string().required(),
+          page: Joi.number().positive().default(1),
+          pageSize: Joi.number().positive().default(10),
+        }),
+      ),
+    )
+    query: PaginationQuery,
+  ) {
+    return this.biddingsService.findAll(query);
+  }
 
   @Get('/my-biddings')
   findMyBiddings(@CurrentLoggedInUser('id') bidderId: string) {

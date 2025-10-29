@@ -5,7 +5,6 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Bidding } from '../../entity/bidding.entity';
 import { Auction } from '../../entity/auction.entity';
 import { User } from '../../entity/user.entity';
-import { JwtAuthModule } from '../../auth/guards/jwt-auth.module';
 import { AuctionsModule } from '../auctions/auctions.module';
 import { BiddingsGateway } from './biddings-gateway';
 import { UsersModule } from '../users/users.module';
@@ -18,7 +17,6 @@ import { SharedModule } from '../shared/shared.module';
     AuctionsModule,
     UsersModule,
     NotificationsModule,
-    JwtAuthModule,
     SharedModule
   ],
   controllers: [BiddingsController],

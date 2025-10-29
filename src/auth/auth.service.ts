@@ -41,17 +41,14 @@ export class AuthService {
     // TODO : Refactor this part cause is the same in login too
     const payload = { id: user.id };
     const accessToken = this.jwtService.sign(payload);
-    const refreshToken = this.jwtService.sign(
-      payload,
-      { expiresIn: '7d' },
-    );
+    const refreshToken = this.jwtService.sign(payload, { expiresIn: '7d' });
     user.accessToken = accessToken;
     await this.usersRepository.save(user);
 
     return {
       user: { id: user.id, email: user.email, name: user.name },
       accessToken,
-      refreshToken
+      refreshToken,
     };
   }
 
@@ -66,13 +63,10 @@ export class AuthService {
     };
 
     const accessToken = this.jwtService.sign(payload);
-    const refreshToken = this.jwtService.sign(
-      payload,
-      { expiresIn: '7d' },
-    );
+    const refreshToken = this.jwtService.sign(payload, { expiresIn: '7d' });
     existingUser.accessToken = accessToken;
     // existingUser.refreshToken = refreshToken;
-  
+
     await this.usersRepository.save(existingUser);
 
     return {
@@ -93,7 +87,6 @@ export class AuthService {
     // }
 
     try {
-
       this.jwtService.verify(refreshToken);
 
       // Generate new access token
@@ -101,8 +94,6 @@ export class AuthService {
       const newAccessToken = this.jwtService.sign(payload, {
         expiresIn: '1h',
       });
-
-
 
       return { accessToken: newAccessToken };
     } catch (err) {

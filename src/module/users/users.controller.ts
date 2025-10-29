@@ -9,7 +9,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { JwtAuthGuard } from '../../auth/guards/auth.guards';
+import { JwtAuthGuard } from '../../auth/guard/jwt-auth.guard';
 import { UsersService } from './users.service';
 import { type CreateUser } from 'src/def/types/user/create-user.type';
 import { type PaginationQuery } from 'src/def/pagination-query';

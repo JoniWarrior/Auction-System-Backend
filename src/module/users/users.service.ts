@@ -27,14 +27,11 @@ export class UsersService {
     return this.usersRepository.save(user);
   }
 
-  async findOne(id: string, relations: string[] = []): Promise<User> {
+  async findOne(id: string, relations: string[] = []): Promise<User | null> {
     const user = await this.usersRepository.findOne({
       where: { id },
       relations,
     });
-    if (!user) {
-      throw new NotFoundException(`User with Id: ${id} not found in the DB! `);
-    }
     return user;
   }
 
