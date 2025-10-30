@@ -15,7 +15,6 @@ import { type CreateUser } from 'src/def/types/user/create-user.type';
 import { type PaginationQuery } from 'src/def/pagination-query';
 import Joi from 'joi';
 import { ValidationPipe } from 'src/pipes/joi-validator.pipe';
-// import { UserRole } from 'src/def/enums/user_role_status';
 import type { UpdateUser } from 'src/def/types/user/update-user.type';
 @Controller('users')
 @UseGuards(JwtAuthGuard)
@@ -83,14 +82,4 @@ export class UsersController {
   remove(@Param('id') id: string) {
     return this.usersService.delete(id);
   }
-
-  // @Get(':id/items')
-  // findSellerItems(@Param('id') id: string) {
-  //   return this.usersService.findSellerItems(id);
-  // }\
-
-  // @Get(':id/biddings')
-  // findBidderBids(@Param('id') id: string) {
-  //   return this.usersService.findBidderBids(id);
-  // }
 }

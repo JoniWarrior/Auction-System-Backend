@@ -13,7 +13,6 @@ import { AuctionsService } from './auctions.service';
 import { type CreateAuction } from 'src/def/types/auction/create-auction';
 import { type UpdateAuction } from 'src/def/types/auction/update-auction';
 import { JwtAuthGuard } from 'src/auth/guard/jwt-auth.guard';
-// import { Roles, RolesGuard } from 'src/auth/guards/roles.guards';
 import { ValidationPipe } from 'src/pipes/joi-validator.pipe';
 import Joi from 'joi';
 import { CurrentLoggedInUser } from 'src/decorator/current-user.decorator';
@@ -23,8 +22,6 @@ import { type PaginationQuery } from 'src/def/pagination-query';
 export class AuctionsController {
   constructor(private readonly auctionsService: AuctionsService) {}
 
-  // @Roles('seller')
-  // @UseGuards(JwtAuthGuard, RolesGuard)
   @UseGuards(JwtAuthGuard)
   @Post()
   create(
@@ -43,8 +40,6 @@ export class AuctionsController {
   }
 
   @UseGuards(JwtAuthGuard)
-  // @Roles('seller')
-  // @UseGuards(RolesGuard)
   @Get('/my-auctions-as-seller')
   findMyAuctions(@CurrentLoggedInUser('id') sellerId: string) {
     return this.auctionsService.findMyAuctionsAsSeller(sellerId);

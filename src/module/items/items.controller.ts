@@ -15,7 +15,6 @@ import { ItemsService } from './items.service';
 import { type CreateItem } from 'src/def/types/item/create-item.type';
 import { type UpdateItem } from 'src/def/types/item/update-item.type';
 import { JwtAuthGuard } from '../../auth/guard/jwt-auth.guard';
-// import { Roles, RolesGuard } from '../../auth/guards/roles.guards';
 import { FileInterceptor } from '@nestjs/platform-express';
 import * as multer from 'multer';
 import { ValidationPipe } from 'src/pipes/joi-validator.pipe';
@@ -25,8 +24,6 @@ import { type PaginationQuery } from 'src/def/pagination-query';
 
 @Controller('items')
 @UseGuards(JwtAuthGuard)
-// @UseGuards(JwtAuthGuard, RolesGuard)
-// @Roles('seller')
 export class ItemsController {
   constructor(private readonly itemsService: ItemsService) {}
 
@@ -71,11 +68,6 @@ export class ItemsController {
   findMyEmptyItems(@CurrentLoggedInUser('id') sellerId: string) {
     return this.itemsService.findMyItemsWithoutAuction(sellerId);
   }
-
-  // @Get(':id/items')
-  // findSellerItems(@Param('id') id: string) {
-  //   return this.itemsService.findSellerItems(id);
-  // } // Not needed
 
   @Get(':id')
   findOne(@Param('id') id: string) {

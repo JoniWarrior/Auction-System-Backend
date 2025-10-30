@@ -112,13 +112,4 @@ export class ItemsService {
     });
     return empty_items;
   }
-
-  // async findSellerItems(id: string): Promise<Item[]> {
-  //   const user = await this.usersService.getUser(id);
-  //   if (user.role !== Role.SELLER)
-  //     throw new BadRequestException(
-  //       `The user with Id: ${id} is not registered as a seller!`,
-  //     );
-  //   return this.findBySeller(id);
-  // } // Not needed
 }

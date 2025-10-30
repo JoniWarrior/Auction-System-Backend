@@ -13,7 +13,6 @@ import { BiddingsService } from './biddings.service';
 import { type CreateBidding } from 'src/def/types/bidding/create-bidding.type';
 import { type UpdateBidding } from 'src/def/types/bidding/update-bidding.type';
 import { JwtAuthGuard } from '../../auth/guard/jwt-auth.guard';
-// import { Roles, RolesGuard } from '../../auth/guards/roles.guards';
 import Joi from 'joi';
 import { ValidationPipe } from 'src/pipes/joi-validator.pipe';
 import { CurrentLoggedInUser } from 'src/decorator/current-user.decorator';
@@ -67,8 +66,6 @@ export class BiddingsController {
   }
 
   @Patch(':id')
-  // @Roles('bidder')
-  // @UseGuards(RolesGuard)
   update(
     @Param('id') id: string,
     @Body(
@@ -86,8 +83,6 @@ export class BiddingsController {
   }
 
   @Delete(':id')
-  // @Roles('bidder')
-  // @UseGuards(RolesGuard)
   remove(@Param('id') id: string) {
     return this.biddingsService.delete(id);
   }
