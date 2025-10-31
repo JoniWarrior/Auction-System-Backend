@@ -112,14 +112,11 @@ export class AuctionsController {
     return this.auctionsService.findBiddingsOfAuction(auctionId);
   }
 
-  // @Get(":id/winner")
-  // async getWinningBid(@Param("id") id : string) {
-  //   return await this.auctionsService.getAuctionWinner(id);
-  // }
-
   @UseGuards(JwtAuthGuard)
   @Post(':id/close')
-  async closeAuction(@Param('id') id: string) {
-    return await this.auctionsService.closeAuction(id);
+  async closeAuction(
+    @Param('id') auctionId: string,
+    @CurrentLoggedInUser('id') currentUserId: string) {
+    return await this.auctionsService.closeAuction(auctionId, currentUserId);
   }
 }

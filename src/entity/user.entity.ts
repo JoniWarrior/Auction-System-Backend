@@ -26,9 +26,6 @@ export class User {
   @CreateDateColumn()
   createdAt: Date;
 
-  @Column({ nullable: true })
-  accessToken: string;
-
   @OneToMany(() => Item, (item) => item.seller, { onDelete: 'CASCADE' })
   items: Item[];
 

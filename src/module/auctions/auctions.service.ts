@@ -1,4 +1,10 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  Logger,
+  BadRequestException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Not, Repository, LessThan, FindOptionsWhere } from 'typeorm';
 import { CreateAuction } from 'src/def/types/auction/create-auction';
@@ -9,6 +15,7 @@ import { AuctionBiddingHelperService } from '../shared/auction-bidding-helper.se
 import { AuctionStatus } from 'src/def/enums/auction_status';
 import { PaginationQuery } from 'src/def/pagination-query';
 import moment from 'moment';
+import { User } from 'src/entity/user.entity';
 
 @Injectable()
 export class AuctionsService {
@@ -41,6 +48,22 @@ export class AuctionsService {
     );
   }
 
+  private async determineAuctionResult(auction: Auction): Promise<{
+    winningBid: Bidding | null;
+    winner: User | null;
+    winningAmount: number;
+  }> {
+    const highestBid = await this.getHighestBid(auction);
+    const winningAmount = highestBid?.amount ?? auction.startingPrice;
+    const winner = highestBid?.bidder ?? null;
+
+    return {
+      winningBid: highestBid ?? null,
+      winner,
+      winningAmount,
+    };
+  }
+
   async create(createAuction: CreateAuction): Promise<Auction> {
     const { startingPrice, endTime, itemId } = createAuction;
 
@@ -54,7 +77,10 @@ export class AuctionsService {
     return this.auctionsRepository.save(auction);
   }
 
-  async findAll({ qs, pageSize, page, }: PaginationQuery, status: any): Promise<Auction[]> {
+  async findAll(
+    { qs, pageSize, page }: PaginationQuery,
+    status: any,
+  ): Promise<Auction[]> {
     const take = Number(pageSize) || 10;
     const skip = ((Number(page) || 1) - 1) * take;
 
@@ -62,7 +88,8 @@ export class AuctionsService {
     where.status = status;
 
     return this.auctionsRepository.find({
-      relations: ['item', 'item.seller'],
+      relations:
+           ['item', 'item.seller', "winningBid", "winningBid.bidder"],
       take,
       skip,
       where,
@@ -135,7 +162,7 @@ export class AuctionsService {
         endTime: LessThan(moment().toDate()),
         status: Not(AuctionStatus.FINISHED),
       },
-      relations: ['biddings', 'biddings.bidder'],
+      relations: ['item', 'biddings', 'biddings.bidder'],
     });
     this.logger.log(
       `Found : ${expiredAuctions.length} expired auctions to close! `,
@@ -145,47 +172,56 @@ export class AuctionsService {
     );
   }
 
-  async closeAuction(auctionId: string): Promise<Auction> {
-    this.logger.log(`Closing auction : ${auctionId} ...`);
+  async closeAuction(
+    auctionId: string,
+    currentUserId?: string,
+  ): Promise<{
+    winner: User | null;
+    winning_bid_amount: number;
+    auction: Auction;
+  }> {
+    this.logger.log(`Closing auction: ${auctionId} ...`);
+
     const auction = await this.getAuction(auctionId, [
       'biddings',
       'biddings.bidder',
       'item',
+      'item.seller',
     ]);
 
-    if (auction.status === AuctionStatus.FINISHED) {
-      this.logger.log(`Auction with Id: ${auction.id} has already finished`);
-      return auction;
+    if (currentUserId && currentUserId !== auction.item.seller.id) {
+      throw new UnauthorizedException(
+        'Only the owner of the auction can close it!',
+      );
     }
 
-    const highestBid = await this.getHighestBid(auction);
-    const winningAmount = highestBid?.amount ?? auction.startingPrice;
+    if (auction.status === AuctionStatus.FINISHED) {
+      throw new BadRequestException('Auction has already finished');
+    }
 
-    if (highestBid) {
+    const { winningBid, winner, winningAmount } =
+      await this.determineAuctionResult(auction);
+
+    if (winningBid) {
       this.logger.log(
-        `Auction ${auctionId} closed. Winner: ${highestBid.bidder.id} with bid: ${winningAmount}`,
+        `Auction ${auctionId} closed. Winner: ${winner?.name} with bid: ${winningAmount}`,
       );
-      auction.winningBid = highestBid;
+
+      auction.winningBid = winningBid;
     } else {
       this.logger.log(`Auction ${auctionId} closed with no bids`);
     }
 
     auction.status = AuctionStatus.FINISHED;
     auction.currentPrice = winningAmount;
-    return this.auctionsRepository.save(auction);
+
+    const savedAuction = await this.auctionsRepository.save(auction);
+
+    return {
+      winner,
+      winning_bid_amount: winningAmount,
+      auction: savedAuction,
+    };
   }
 
-  // async getAuctionWinner(auctionId: string): Promise<{
-  //   winner: User | null;
-  //   winning_bid_amount: number;
-  //   auction: Auction;
-  // }> {
-  //   const auction = await this.getAuction(auctionId, ['biddings', 'biddings.bidder', 'item', 'winningBid', "winningBid.bidder"]);
-  //   if (auction.status !== STATUS.FINISHED) throw new BadRequestException(`Auction with ID ${auctionId} not finished yet`);
-
-  //   const winnerBid = auction.winningBid ?? (await this.getHighestBid(auction));
-  //   const winningAmount = winnerBid?.amount ?? auction.startingPrice;
-  //   const winner = winnerBid?.bidder ?? null;
-  //   return { winner, winning_bid_amount: winningAmount, auction };
-  // }
 }
