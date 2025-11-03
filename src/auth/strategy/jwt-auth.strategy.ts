@@ -13,7 +13,7 @@ export class JwtAuthStrategy extends PassportStrategy(Strategy, 'jwt-auth') {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: configService.get('JWT_SECRET'),
+      secretOrKey: configService.get<string>('JWT_SECRET'),
     });
   }
 
@@ -25,7 +25,7 @@ export class JwtAuthStrategy extends PassportStrategy(Strategy, 'jwt-auth') {
     if (!user) {
       throw new UnauthorizedException();
     }
-
     return user;
   }
+
 }

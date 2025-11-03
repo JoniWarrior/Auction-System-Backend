@@ -15,7 +15,11 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
-  private generateUserWithToken(payload : { id : string, email : string, name : string} ) {
+  private generateUserWithToken(payload: {
+    id: string;
+    email: string;
+    name: string;
+  }) {
     const accessToken = this.jwtService.sign(payload);
     const refreshToken = this.jwtService.sign(payload, { expiresIn: '7d' });
     return {
@@ -30,7 +34,9 @@ export class AuthService {
   }
 
   async register(createUser: CreateUser) {
-    const existingUser = await this.usersService.findByEmail(createUser.email);
+    const existingUser = await this.usersService.getByEmailOrFail(
+      createUser.email,
+    );
     if (existingUser) {
       throw new BadRequestException('Email already exists');
     }
@@ -45,7 +51,7 @@ export class AuthService {
       ...createUser,
       password: hashedPassword,
     });
-    const payload = { id : user.id, email : user.email, name : user.name};
+    const payload = { id: user.id, email: user.email, name: user.name };
     return this.generateUserWithToken(payload);
   }
 
@@ -53,24 +59,37 @@ export class AuthService {
     const existingUser = await this.usersService.findByEmail(email);
     const match = await bcrypt.compare(password, existingUser.password);
     if (!match) throw new UnauthorizedException('Invalid credentials');
-    const payload = { id : existingUser.id, email : existingUser.email, name : existingUser.name};
+    const payload = {
+      id: existingUser.id,
+      email: existingUser.email,
+      name: existingUser.name,
+    };
     return this.generateUserWithToken(payload);
   }
-  
+
   async refresh(userId: string, refreshToken: string) {
-    const user = await this.usersService.findOne(userId);
-    if (!user || !refreshToken) {
-      throw new UnauthorizedException('Invalid refresh token');
+    if (!refreshToken) {
+      throw new UnauthorizedException('No refresh token provided');
     }
 
     try {
-      this.jwtService.verify(refreshToken);
-      const payload = { id: user?.id };
-      const newAccessToken = this.jwtService.sign(payload, {
-        expiresIn: '1h',
-      });
+      const payload: any = this.jwtService.verify(refreshToken);
+      if (payload.id !== userId) {
+        throw new UnauthorizedException('Token does not match user');
+      }
 
-      return { accessToken: newAccessToken };
+      const user = await this.usersService.findOne(userId);
+      if (!user) throw new UnauthorizedException('User not found');
+
+      const newAccessToken = this.jwtService.sign(
+        { id: user.id, email: user.email, name: user.name },
+        { expiresIn: '1h' },
+      );
+
+      return {
+        accessToken: newAccessToken,
+        user: { id: user.id, email: user.email, name: user.name },
+      };
     } catch (err) {
       throw new UnauthorizedException('Refresh token expired or invalid');
     }

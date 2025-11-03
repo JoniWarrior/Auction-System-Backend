@@ -72,28 +72,30 @@ export class BiddingsGateway
   }
 
   async broadcastOutBid(
-    auctionId: string,
-    bidding: any,
-    outbidderIds: string[],
-  ) {
-    const auction = await this.auctionsService.findOne(auctionId);
-    if (!auction) return;
+  auctionId: string,
+  bidding: any,
+  outbidderIds: string[],
+) {
+  const auction = await this.auctionsService.findOne(auctionId);
+  if (!auction) return;
 
-    const message = `You have been outbid in auction: ${auction.item.title} with bid: ${bidding.amount}`;
+  const message = `You have been outbid in auction: ${auction.item.title} with bid: ${bidding.amount}`;
 
-    for (const userId of outbidderIds) {
-      const socketId = this.userSockets.get(userId);
+  for (const userId of outbidderIds) {
+    const socketId = this.userSockets.get(userId);
 
-      await this.notificationsService.create(
-        userId,
-        auctionId,
-        message,
-      );
-      if (socketId) {
-        this.server.to(socketId).emit('outBid', { message, bidding });
-      }
+    const notification = await this.notificationsService.create(
+      userId,
+      auctionId,
+      message,
+    );
+
+    if (socketId) {
+      this.server.to(socketId).emit('outBid', notification);
     }
   }
+}
+
 
   @SubscribeMessage('startBidding')
   handleStartBidding(

@@ -95,7 +95,7 @@ export class BiddingsService {
 
     return fullBid;
   }
-
+  
   async findAll({ qs, pageSize, page }: PaginationQuery): Promise<Bidding[]> {
     return this.biddingsRepository.find({
       where: [{ auctionId: ILike(`%${qs}%`) }, { bidderId: ILike(`${qs}`) }],

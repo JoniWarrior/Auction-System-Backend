@@ -5,6 +5,11 @@ import { NotificationsService } from './notifications.service';
 export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}
 
+  @Get()
+  async getAll() {
+    return this.notificationsService.findAll();
+  }
+
   @Get(':userId')
   async getUserNotifications(@Param('userId') userId: string) {
     return this.notificationsService.findUserNotifications(userId);

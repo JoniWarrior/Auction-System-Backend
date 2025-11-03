@@ -10,6 +10,10 @@ export class NotificationsService {
     private notificationsRepo: Repository<Notification>,
   ) {}
 
+  async findAll() {
+    return this.notificationsRepo.find();
+  }
+
   async create(userId: string, auctionId: string, message: string) {
     const notification = this.notificationsRepo.create({
       userId,
@@ -21,9 +25,9 @@ export class NotificationsService {
 
   async findUserNotifications(userId: string) {
     return await this.notificationsRepo.find({
-      where: { userId },
-      order: { createdAt: 'DESC' },
-    });
+        where: { userId },
+        order: { createdAt: 'DESC' },
+      });
   }
 
   async findUnreadUserNotifications(userId: string) {

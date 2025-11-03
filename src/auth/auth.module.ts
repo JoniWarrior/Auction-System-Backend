@@ -7,9 +7,12 @@ import { User } from '../entity/user.entity';
 import { JwtAuthGuard } from './guard/jwt-auth.guard';
 import { JwtAuthStrategy } from './strategy/jwt-auth.strategy';
 import { JWT } from '../dynamic-module/jwt';
+import { PassportModule } from '@nestjs/passport';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([User]), UsersModule, JWT],
+  imports: [TypeOrmModule.forFeature([User]), UsersModule, JWT,
+  PassportModule.register({ defaultStrategy: 'jwt-auth' }),
+],
   providers: [AuthService, JwtAuthGuard, JwtAuthStrategy],
   controllers: [AuthController],
   exports: [AuthService, JwtAuthGuard],
