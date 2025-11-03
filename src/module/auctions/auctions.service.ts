@@ -88,8 +88,7 @@ export class AuctionsService {
     where.status = status;
 
     return this.auctionsRepository.find({
-      relations:
-           ['item', 'item.seller', "winningBid", "winningBid.bidder"],
+      relations: ['item', 'item.seller', 'winningBid', 'winningBid.bidder'],
       take,
       skip,
       where,
@@ -97,24 +96,49 @@ export class AuctionsService {
     });
   }
 
-  async findMyAuctionsAsSeller(sellerId: string): Promise<Auction[]> {
+  async findMyAuctionsAsBidder(
+    bidderId: string,
+    status?: string,
+  ): Promise<Auction[]> {
+    const where: any = {
+      biddings: { bidderId },
+    };
+
+    if (status && status !== 'all') {
+      where.status = status;
+    }
     return this.auctionsRepository.find({
-      where: {
-        item: {
-          sellerId,
-        },
+      where,
+      relations: [
+        'item',
+        'item.seller',
+        'biddings',
+        'biddings.bidder',
+        'winningBid',
+        'winningBid.bidder',
+      ],
+      order: {
+        startingPrice: 'ASC',
       },
-      relations: ['item', 'item.seller', 'biddings'],
     });
   }
 
-  async findMyAuctionsAsBidder(bidderId: string): Promise<Auction[]> {
+  async findMyAuctionsAsSeller(
+    sellerId : string,
+    status ?: string
+  ) : Promise<Auction[]> {
+    const where : any = {
+      item : { sellerId }
+    };
+
+    if (status && status !== "all") {
+      where.status = status;
+    }
+
     return this.auctionsRepository.find({
-      where: {
-        biddings: { bidderId },
-      },
-      relations: ['item', 'item.seller', 'biddings', 'winningBid'],
-    });
+      where,
+      relations: ['item', 'item.seller', 'biddings'],
+    })
   }
 
   async findOne(id: string): Promise<Auction> {
@@ -223,5 +247,4 @@ export class AuctionsService {
       auction: savedAuction,
     };
   }
-
 }

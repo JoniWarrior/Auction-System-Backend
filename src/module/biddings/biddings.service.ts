@@ -118,7 +118,7 @@ export class BiddingsService {
 
   async findMyBiddings(id: string): Promise<Bidding[]> {
     return this.findBidsByBider(id);
-  } // endpoint not used in front
+  }
 
   async update(id: string, updateBidding: UpdateBidding): Promise<Bidding> {
     const bidding = await this.findOne(id);

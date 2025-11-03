@@ -58,7 +58,7 @@ export class BiddingsController {
   @Get('/my-biddings')
   findMyBiddings(@CurrentLoggedInUser('id') bidderId: string) {
     return this.biddingsService.findMyBiddings(bidderId);
-  } // endpoint not used in front
+  }
 
   @Get(':id')
   findOne(@Param('id') id: string) {

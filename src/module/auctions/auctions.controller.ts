@@ -41,14 +41,23 @@ export class AuctionsController {
 
   @UseGuards(JwtAuthGuard)
   @Get('/my-auctions-as-seller')
-  findMyAuctions(@CurrentLoggedInUser('id') sellerId: string) {
-    return this.auctionsService.findMyAuctionsAsSeller(sellerId);
+  findMyAuctions(
+    @CurrentLoggedInUser('id') sellerId: string,
+    @Query("status") status ?: string
+  ) {
+    return this.auctionsService.findMyAuctionsAsSeller(sellerId, status);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('/my-auctions-as-bidder')
-  findMyAuctionsAsBidder(@CurrentLoggedInUser('id') bidderId: string) {
-    return this.auctionsService.findMyAuctionsAsBidder(bidderId);
+  findMyAuctionsAsBidder(
+    @CurrentLoggedInUser('id') bidderId: string,
+    @Query('status') status?: string,
+  ) {
+    return this.auctionsService.findMyAuctionsAsBidder(
+      bidderId,
+      status,
+    );
   }
 
   @Get()
@@ -116,7 +125,8 @@ export class AuctionsController {
   @Post(':id/close')
   async closeAuction(
     @Param('id') auctionId: string,
-    @CurrentLoggedInUser('id') currentUserId: string) {
+    @CurrentLoggedInUser('id') currentUserId: string,
+  ) {
     return await this.auctionsService.closeAuction(auctionId, currentUserId);
   }
 }

@@ -21,6 +21,4 @@ export class AuthController {
     refreshToken(@Body() body : { userId : string, refreshToken : string}) {
         return this.authService.refresh(body.userId, body.refreshToken);
     }
-
-
 }
