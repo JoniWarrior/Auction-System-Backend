@@ -9,7 +9,6 @@ import { UpdateBidding } from 'src/def/types/bidding/update-bidding.type';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Bidding } from '../../entity/bidding.entity';
 import { ILike, Repository } from 'typeorm';
-import { Auction } from '../../entity/auction.entity';
 import { BiddingsGateway } from './biddings-gateway';
 import { AuctionBiddingHelperService } from '../shared/auction-bidding-helper.service';
 import { User } from 'src/entity/user.entity';
@@ -27,12 +26,6 @@ export class BiddingsService {
     private readonly biddingsGateway: BiddingsGateway,
     private readonly helperService: AuctionBiddingHelperService,
   ) {}
-
-  private getHighestBid(auction: Auction): number {
-    return auction.biddings.length
-      ? Math.max(...auction.biddings.map((b) => b.amount))
-      : auction.startingPrice;
-  }
 
   async create(
     createBidding: CreateBidding,
@@ -53,10 +46,15 @@ export class BiddingsService {
         `User (bidder) with ID ${bidderId} not found`,
       );
     }
-    const currentHighestBid = this.getHighestBid(auction);
-    if (amount <= currentHighestBid) {
+    const currentHighestBid = await this.helperService.getHighestBid(auction);
+    const highestAmount = currentHighestBid?.amount;
+    if (!highestAmount) {
+      throw new NotFoundException("Only Starting Price Not allowed")
+    }
+
+    if (amount <= highestAmount) {
       throw new BadRequestException(
-        `Bid amount must be higher than $${currentHighestBid}`,
+        `Bid amount must be higher than $${highestAmount}`,
       );
     }
 
@@ -95,7 +93,7 @@ export class BiddingsService {
 
     return fullBid;
   }
-  
+
   async findAll({ qs, pageSize, page }: PaginationQuery): Promise<Bidding[]> {
     return this.biddingsRepository.find({
       where: [{ auctionId: ILike(`%${qs}%`) }, { bidderId: ILike(`${qs}`) }],

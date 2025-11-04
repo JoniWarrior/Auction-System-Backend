@@ -19,17 +19,19 @@ export class AuctionBiddingHelperService {
 
     @InjectRepository(Bidding)
     private biddingsRepository: Repository<Bidding>,
+  ) {}
 
-    ) {}
-
-  async validateAuctionForBidding(auctionId: string, bidderId : string): Promise<Auction> {
+  async validateAuctionForBidding(
+    auctionId: string,
+    bidderId: string,
+  ): Promise<Auction> {
     const auction = await this.auctionsRepository.findOne({
       where: { id: auctionId },
-      relations: ['biddings', 'biddings.bidder', 'item', "item.seller"],
+      relations: ['biddings', 'biddings.bidder', 'item', 'item.seller'],
     });
-    
+
     if (auction?.item.seller.id === bidderId) {
-      throw new UnauthorizedException("You cannot bid in your own auction!");
+      throw new UnauthorizedException('You cannot bid in your own auction!');
     }
 
     if (!auction) {
@@ -75,5 +77,13 @@ export class AuctionBiddingHelperService {
       where: { id: savedAuction.id },
       relations: ['item', 'biddings'],
     });
+  }
+
+  async getHighestBid(auction: Auction): Promise<Bidding | null> {
+    if (!auction?.biddings?.length) return null;
+    return auction.biddings.reduce(
+      (max, b) => (b.amount > max.amount ? b : max),
+      auction.biddings[0],
+    );
   }
 }

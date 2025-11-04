@@ -71,9 +71,8 @@ export class BiddingsController {
     @Body(
       ValidationPipe.from(
         Joi.object({
-          amount: Joi.number().required().min(0),
+          amount: Joi.number().required().positive(),
           auctionId: Joi.string().guid({ version: 'uuidv4' }),
-          bidderId: Joi.string().guid({ version: 'uuidv4' }),
         }),
       ),
     )

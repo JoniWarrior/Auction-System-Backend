@@ -6,7 +6,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Not, Repository, LessThan, FindOptionsWhere } from 'typeorm';
+import { Not, Repository, LessThan, FindOptionsWhere, ILike } from 'typeorm';
 import { CreateAuction } from 'src/def/types/auction/create-auction';
 import { Auction } from '../../entity/auction.entity';
 import { Bidding } from '../../entity/bidding.entity';
@@ -25,6 +25,7 @@ export class AuctionsService {
     @InjectRepository(Auction)
     private auctionsRepository: Repository<Auction>,
     private helperService: AuctionBiddingHelperService,
+
   ) {}
 
   private async getAuction(
@@ -40,20 +41,13 @@ export class AuctionsService {
     return auction;
   }
 
-  private async getHighestBid(auction: Auction): Promise<Bidding | null> {
-    if (!auction.biddings || auction.biddings.length === 0) return null;
-    return auction.biddings.reduce(
-      (max, bidding) => (bidding.amount > max.amount ? bidding : max),
-      auction.biddings[0],
-    );
-  }
 
   private async determineAuctionResult(auction: Auction): Promise<{
     winningBid: Bidding | null;
     winner: User | null;
     winningAmount: number;
   }> {
-    const highestBid = await this.getHighestBid(auction);
+    const highestBid = await this.helperService.getHighestBid(auction);
     const winningAmount = highestBid?.amount ?? auction.startingPrice;
     const winner = highestBid?.bidder ?? null;
 
@@ -78,22 +72,32 @@ export class AuctionsService {
   }
 
   async findAll(
-    { qs, pageSize, page }: PaginationQuery,
+    { qs = '', pageSize, page }: PaginationQuery,
     status: any,
-  ): Promise<Auction[]> {
+  ): Promise<{data : Auction[]; meta : any}> {
     const take = Number(pageSize) || 10;
     const skip = ((Number(page) || 1) - 1) * take;
 
     const where: FindOptionsWhere<Auction> = {};
-    where.status = status;
-
-    return this.auctionsRepository.find({
-      relations: ['item', 'item.seller', 'winningBid', 'winningBid.bidder'],
-      take,
-      skip,
+    if (status && status !== "all") {where.status = status};
+    if (qs) {where.item = { title : ILike(`%${qs}%`)}};
+    
+    const [data, total] = await this.auctionsRepository.findAndCount({
       where,
+      relations: ['item', 'item.seller', 'winningBid', 'winningBid.bidder'],
       order: { startingPrice: 'ASC' },
+      take,
+      skip
     });
+    return {
+      data,
+      meta : {
+        total,
+        page : Number(page),
+        pageSize : Number(pageSize),
+        totalPages : Math.ceil(total / take)
+      }
+    }
   }
 
   async findMyAuctionsAsBidder(

@@ -65,23 +65,23 @@ export class AuctionsController {
     @Query(
       ValidationPipe.from(
         Joi.object({
-          status: Joi.string().valid(...Object.values(AuctionStatus)),
+          status: Joi.string().valid(...Object.values(AuctionStatus)).optional(),
           pageSize: Joi.number(),
           page: Joi.number(),
-          qs: Joi.string(),
+          qs: Joi.string().allow("").optional(),
         }),
       ),
     )
-    query: PaginationQuery & { status: string },
+    query: PaginationQuery & { status?: string },
   ) {
     const { pageSize, page = 1, qs, status } = query;
     return this.auctionsService.findAll(
       {
         page: Number(page),
         pageSize: Number(pageSize) || 10,
-        qs,
+        qs: qs || ""
       },
-      status,
+      status || "all"
     );
   }
 
