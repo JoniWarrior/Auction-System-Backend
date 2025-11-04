@@ -81,7 +81,7 @@ export class AuctionsController {
         pageSize: Number(pageSize) || 10,
         qs: qs || ""
       },
-      status || "all"
+      status || ""
     );
   }
 
