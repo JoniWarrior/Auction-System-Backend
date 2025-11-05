@@ -51,7 +51,7 @@ export class ItemsService {
       const savedItem = await this.itemsRepository.save(item);
       return savedItem;
     } catch (error) {
-      console.error('Error in itemsService.create:', error);
+      console.error('Error in itemsService create', error);
       throw error;
     }
   }

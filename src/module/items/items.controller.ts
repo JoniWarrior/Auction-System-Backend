@@ -37,7 +37,6 @@ export class ItemsController {
         Joi.object({
           title: Joi.string().required(),
           description: Joi.string().required().min(15),
-          sellerId: Joi.string().guid({ version: 'uuidv4' }),
         }),
       ),
     )
