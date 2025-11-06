@@ -29,7 +29,6 @@ export class BiddingsController {
         Joi.object({
           amount: Joi.number().required().min(0),
           auctionId: Joi.string().guid({ version: 'uuidv4' }),
-          bidderId: Joi.string().guid({ version: 'uuidv4' }),
         }),
       ),
     )

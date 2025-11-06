@@ -7,7 +7,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { CreateItem } from 'src/def/types/item/create-item.type';
 import { UpdateItem } from 'src/def/types/item/update-item.type';
 import { Item } from '../../entity/item.entity';
-import { ILike, IsNull, Repository } from 'typeorm';
+import { FindOptionsWhere, ILike, IsNull, Repository } from 'typeorm';
 import { v2 as cloudinary } from 'cloudinary';
 import { PaginationQuery } from 'src/def/pagination-query';
 
@@ -102,14 +102,34 @@ export class ItemsService {
     return { message: `Item ${id} has been soft-deleted` };
   }
 
-  async findMyItemsWithoutAuction(userId: string): Promise<Item[]> {
-    const empty_items = await this.itemsRepository.find({
-      where: {
-        sellerId: userId,
-        auction: { id: IsNull() },
-      },
-      relations: ['seller', 'auction'],
+  async findMyItemsWithoutAuction(
+    { qs = '', pageSize, page }: PaginationQuery,
+    userId: string,
+  ): Promise<{ data: Item[]; meta: any }> {
+    const take = Number(pageSize) || 6;
+    const skip = ((Number(page) || 1) - 1) * take;
+
+    const where: FindOptionsWhere<Item> = {
+      sellerId: userId,
+      auction: { id: IsNull() },
+    };
+    if (qs) { where.title = ILike(`%${qs}%`) };
+    const [data, total] = await this.itemsRepository.findAndCount({
+      where,
+      relations : ["seller", "auction"],
+      order : { title : "ASC"},
+      take,
+      skip
     });
-    return empty_items;
+
+    return {
+      data,
+      meta : {
+        total,
+        page : Number(page),
+        pageSize : Number(pageSize),
+        totalPages : Math.ceil(total / take)
+      }
+    }
   }
 }

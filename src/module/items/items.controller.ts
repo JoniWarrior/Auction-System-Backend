@@ -64,8 +64,28 @@ export class ItemsController {
   }
 
   @Get('/my-empty-items')
-  findMyEmptyItems(@CurrentLoggedInUser('id') sellerId: string) {
-    return this.itemsService.findMyItemsWithoutAuction(sellerId);
+  async findMyEmptyItems(
+    @Query(
+      ValidationPipe.from(
+        Joi.object({
+          pageSize: Joi.number(),
+          page: Joi.number(),
+          qs: Joi.string().allow('').optional(),
+        }),
+      ),
+    )
+    query: PaginationQuery,
+    @CurrentLoggedInUser('id') sellerId: string,
+  ) {
+    const { pageSize, page = 1, qs } = query;
+    return this.itemsService.findMyItemsWithoutAuction(
+      {
+        page: Number(page),
+        pageSize: Number(pageSize) || 5,
+        qs: qs || '',
+      },
+      sellerId,
+    );
   }
 
   @Get(':id')
