@@ -13,9 +13,10 @@ import { Bidding } from '../../entity/bidding.entity';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { AuctionBiddingHelperService } from '../shared/auction-bidding-helper.service';
 import { AuctionStatus } from 'src/def/enums/auction_status';
-import { PaginationQuery } from 'src/def/pagination-query';
+import { FindAuctionsOptions, PaginationQuery } from 'src/def/pagination-query';
 import moment from 'moment';
 import { User } from 'src/entity/user.entity';
+import { Item } from 'src/entity/item.entity';
 
 @Injectable()
 export class AuctionsService {
@@ -25,7 +26,6 @@ export class AuctionsService {
     @InjectRepository(Auction)
     private auctionsRepository: Repository<Auction>,
     private helperService: AuctionBiddingHelperService,
-
   ) {}
 
   private async getAuction(
@@ -40,7 +40,6 @@ export class AuctionsService {
       throw new NotFoundException(`Auction with Id: ${id} not found`);
     return auction;
   }
-
 
   private async determineAuctionResult(auction: Auction): Promise<{
     winningBid: Bidding | null;
@@ -67,52 +66,81 @@ export class AuctionsService {
       currentPrice: startingPrice,
       itemId,
     });
-
     return this.auctionsRepository.save(auction);
   }
-
-  async findAll(
-    { qs = '', pageSize, page }: PaginationQuery,
-    status: any,
-  ): Promise<{data : Auction[]; meta : any}> {
-    const take = Number(pageSize) || 10;
+  
+  private async findAuctionsPagination({
+    qs = '',
+    pageSize,
+    page,
+    status,
+    sellerId,
+    bidderId,
+    relations = [],
+  }: FindAuctionsOptions): Promise<{ data: Auction[]; meta: any }> {
+    const take = Number(pageSize) || 9;
     const skip = ((Number(page) || 1) - 1) * take;
-
     const where: FindOptionsWhere<Auction> = {};
-    if (status && status !== "all") {where.status = status};
-    if (qs) {where.item = { title : ILike(`%${qs}%`)}};
-    
-    const [data, total] = await this.auctionsRepository.findAndCount({
-      where,
-      relations: ['item', 'item.seller', 'winningBid', 'winningBid.bidder'],
-      order: { startingPrice: 'ASC' },
-      take,
-      skip
-    });
-    return {
-      data,
-      meta : {
-        total,
-        page : Number(page),
-        pageSize : Number(pageSize),
-        totalPages : Math.ceil(total / take)
-      }
-    }
-  }
 
-  async findMyAuctionsAsBidder(
-    bidderId: string,
-    status?: string,
-  ): Promise<Auction[]> {
-    const where: any = {
-      biddings: { bidderId },
-    };
+    if (sellerId) {
+      where.item = { sellerId };
+    }
+
+    if (bidderId) {
+      where.biddings = { bidderId };
+    }
 
     if (status && status !== 'all') {
       where.status = status;
     }
-    return this.auctionsRepository.find({
+
+    if (qs) {
+      if (!where.item) {
+        where.item = { title: ILike(`%${qs}%`) };
+      } else {
+        where.item = {
+          ...(where.item as FindOptionsWhere<Item>),
+          title: ILike(`%${qs}%`),
+        };
+      }
+    }
+
+    const [data, total] = await this.auctionsRepository.findAndCount({
       where,
+      relations,
+      order: { startingPrice: 'ASC' },
+      take,
+      skip,
+    });
+
+    return {
+      data,
+      meta: {
+        total,
+        page: Number(page),
+        pageSize: take,
+        totalPages: Math.ceil(total / take),
+      },
+    };
+  }
+
+  async findAll(query: PaginationQuery, status?: string) {
+    return this.findAuctionsPagination({
+      ...query,
+      status,
+      relations: ['item', 'item.seller', 'winningBid', 'winningBid.bidder'],
+    });
+  }
+
+  async findMyAuctionsAsBidder(
+    query: PaginationQuery,
+    bidderId?: string,
+    status?: string,
+  ) {
+    return this.findAuctionsPagination({
+      ...query,
+      bidderId,
+      status,
       relations: [
         'item',
         'item.seller',
@@ -121,28 +149,20 @@ export class AuctionsService {
         'winningBid',
         'winningBid.bidder',
       ],
-      order: {
-        startingPrice: 'ASC',
-      },
     });
   }
 
   async findMyAuctionsAsSeller(
-    sellerId : string,
-    status ?: string
-  ) : Promise<Auction[]> {
-    const where : any = {
-      item : { sellerId }
-    };
-
-    if (status && status !== "all") {
-      where.status = status;
-    }
-
-    return this.auctionsRepository.find({
-      where,
+    query: PaginationQuery,
+    sellerId?: string,
+    status?: string,
+  ) {
+    return this.findAuctionsPagination({
+      ...query,
+      sellerId,
+      status,
       relations: ['item', 'item.seller', 'biddings'],
-    })
+    });
   }
 
   async findOne(id: string): Promise<Auction> {

@@ -42,21 +42,60 @@ export class AuctionsController {
   @UseGuards(JwtAuthGuard)
   @Get('/my-auctions-as-seller')
   findMyAuctions(
+    @Query(
+      ValidationPipe.from(
+        Joi.object({
+          status: Joi.string()
+            .valid(...Object.values(AuctionStatus))
+            .optional(),
+          pageSize: Joi.number(),
+          page: Joi.number(),
+          qs: Joi.string().allow('').optional(),
+        }),
+      ),
+    )
+    query: PaginationQuery & { status?: string },
     @CurrentLoggedInUser('id') sellerId: string,
-    @Query("status") status ?: string
   ) {
-    return this.auctionsService.findMyAuctionsAsSeller(sellerId, status);
+    const { pageSize, page = 1, qs, status } = query;
+    return this.auctionsService.findMyAuctionsAsSeller(
+      {
+        page: Number(page),
+        pageSize: Number(pageSize) || 9,
+        qs: qs || '',
+      },
+      sellerId,
+      status || 'all',
+    );
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('/my-auctions-as-bidder')
   findMyAuctionsAsBidder(
+    @Query(
+      ValidationPipe.from(
+        Joi.object({
+          status: Joi.string()
+            .valid(...Object.values(AuctionStatus))
+            .optional(),
+          pageSize: Joi.number(),
+          page: Joi.number(),
+          qs: Joi.string().allow('').optional(),
+        }),
+      ),
+    )
+    query: PaginationQuery & { status?: string },
     @CurrentLoggedInUser('id') bidderId: string,
-    @Query('status') status?: string,
   ) {
+    const { pageSize, page = 1, qs, status } = query;
     return this.auctionsService.findMyAuctionsAsBidder(
+      {
+        page: Number(page),
+        pageSize: Number(pageSize) || 9,
+        qs: qs || '',
+      },
       bidderId,
-      status,
+      status || 'all',
     );
   }
 
@@ -65,10 +104,12 @@ export class AuctionsController {
     @Query(
       ValidationPipe.from(
         Joi.object({
-          status: Joi.string().valid(...Object.values(AuctionStatus)).optional(),
+          status: Joi.string()
+            .valid(...Object.values(AuctionStatus))
+            .optional(),
           pageSize: Joi.number(),
           page: Joi.number(),
-          qs: Joi.string().allow("").optional(),
+          qs: Joi.string().allow('').optional(),
         }),
       ),
     )
@@ -78,10 +119,10 @@ export class AuctionsController {
     return this.auctionsService.findAll(
       {
         page: Number(page),
-        pageSize: Number(pageSize) || 10,
-        qs: qs || ""
+        pageSize: Number(pageSize) || 9,
+        qs: qs || '',
       },
-      status || ""
+      status || '',
     );
   }
 
