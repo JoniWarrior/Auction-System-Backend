@@ -17,6 +17,7 @@ export class AuthController {
         return this.authService.login(body.email, body.password);
     }
 
+    // Could not pass the userId ? It's already in the refreshToken
     @Post("refresh")
     refreshToken(@Body() body : { userId : string, refreshToken : string}) {
         return this.authService.refresh(body.userId, body.refreshToken);

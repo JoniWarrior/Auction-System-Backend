@@ -67,6 +67,7 @@ export class AuthService {
     return this.generateUserWithToken(payload);
   }
 
+  // Could I use different secret key for refresh token ? / so not the accessToken
   async refresh(userId: string, refreshToken: string) {
     if (!refreshToken) {
       throw new UnauthorizedException('No refresh token provided');

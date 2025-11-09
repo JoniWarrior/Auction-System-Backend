@@ -61,10 +61,10 @@ export class ItemsService {
       where: [
         { title: ILike(`%${qs}%`) },
         { description: ILike(`%${qs}%`) },
-        { imageURL: ILike(`%${qs}%`) },
       ],
       relations: ['seller'],
       take: pageSize,
+      // @ts-ignore
       skip: (page - 1) * pageSize,
       order: { title: 'ASC' },
     });

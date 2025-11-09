@@ -49,7 +49,7 @@ export class BiddingsService {
     const currentHighestBid = await this.helperService.getHighestBid(auction);
     const highestAmount = currentHighestBid?.amount;
     if (!highestAmount) {
-      throw new NotFoundException("Only Starting Price Not allowed")
+      throw new NotFoundException('Only Starting Price Not allowed');
     }
 
     if (amount <= highestAmount) {
@@ -71,12 +71,10 @@ export class BiddingsService {
     });
 
     const savedBid = await this.biddingsRepository.save(bidding);
-    const fullBid = await this.biddingsRepository.findOne({
+    const fullBid = await this.biddingsRepository.findOneOrFail({
       where: { id: savedBid.id },
       relations: ['auction', 'bidder', 'auction.item'],
     });
-
-    if (!fullBid) throw new BadRequestException('Not exist!');
     this.biddingsGateway.broadcastNewBid(updatedAuction.id, fullBid);
 
     const pastBidders = auction.biddings
@@ -94,14 +92,27 @@ export class BiddingsService {
     return fullBid;
   }
 
-  async findAll({ qs, pageSize, page }: PaginationQuery): Promise<Bidding[]> {
+  // async findAll({ qs, pageSize, page }: PaginationQuery): Promise<Bidding[]> {
+  //   return this.biddingsRepository.find({
+  //     where: [{ bidder: ILike(`%${qs}%`) }, { bidderId: ILike(`${qs}`) }],
+  //     relations: ['auction', 'bidder'],
+  //     take: pageSize,
+  //     // @ts-ignore
+  //     skip: (page - 1) * pageSize,
+  //     order: { amount: 'ASC' },
+  //   });
+  // }
+
+  async findAll({qs, pageSize, page} : PaginationQuery) : Promise<Bidding[]> {
     return this.biddingsRepository.find({
-      where: [{ auctionId: ILike(`%${qs}%`) }, { bidderId: ILike(`${qs}`) }],
-      relations: ['auction', 'bidder'],
-      take: pageSize,
-      skip: (page - 1) * pageSize,
-      order: { amount: 'ASC' },
-    });
+      where : {bidder : {name : ILike(`%${qs}%`)}},
+      relations : ['auction', 'bidder'],
+      take : pageSize,
+      // @ts-ignore
+      skip : (page - 1) * pageSize,
+      order : { amount : "ASC"}
+
+    })
   }
 
   async findOne(id: string): Promise<Bidding> {

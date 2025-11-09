@@ -66,6 +66,7 @@ export class UsersService {
     return this.usersRepository.find({
       where: [{ email: ILike(`%${qs}%`) }, { name: ILike(`%${qs}%`) }],
       take: pageSize,
+      // @ts-ignore
       skip: (page - 1) * pageSize,
       order: { name: 'ASC' },
     });

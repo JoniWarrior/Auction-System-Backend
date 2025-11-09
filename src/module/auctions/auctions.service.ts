@@ -48,7 +48,7 @@ export class AuctionsService {
   }> {
     const highestBid = await this.helperService.getHighestBid(auction);
     const winningAmount = highestBid?.amount ?? auction.startingPrice;
-    const winner = highestBid?.bidder ?? null;
+    const winner = highestBid?.bidder ?? null; // User or null
 
     return {
       winningBid: highestBid ?? null,
@@ -57,18 +57,6 @@ export class AuctionsService {
     };
   }
 
-  async create(createAuction: CreateAuction): Promise<Auction> {
-    const { startingPrice, endTime, itemId } = createAuction;
-
-    const auction = this.auctionsRepository.create({
-      startingPrice,
-      endTime,
-      currentPrice: startingPrice,
-      itemId,
-    });
-    return this.auctionsRepository.save(auction);
-  }
-  
   private async findAuctionsPagination({
     qs = '',
     pageSize,
@@ -122,6 +110,18 @@ export class AuctionsService {
         totalPages: Math.ceil(total / take),
       },
     };
+  }
+
+  async create(createAuction: CreateAuction): Promise<Auction> {
+    const { startingPrice, endTime, itemId } = createAuction;
+
+    const auction = this.auctionsRepository.create({
+      startingPrice,
+      endTime,
+      currentPrice: startingPrice,
+      itemId,
+    });
+    return this.auctionsRepository.save(auction);
   }
 
   async findAll(query: PaginationQuery, status?: string) {
@@ -262,7 +262,6 @@ export class AuctionsService {
 
     auction.status = AuctionStatus.FINISHED;
     auction.currentPrice = winningAmount;
-
     const savedAuction = await this.auctionsRepository.save(auction);
 
     return {
