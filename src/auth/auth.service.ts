@@ -7,26 +7,29 @@ import { UsersService } from '../module/users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { type CreateUser } from 'src/def/types/user/create-user.type';
+import { options } from 'joi';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
+    private readonly configService: ConfigService,
   ) {}
 
-  private generateUserWithToken(payload: {
-    id: string;
-    email: string;
-    name: string;
-  }) {
-    const accessToken = this.jwtService.sign(payload);
-    const refreshToken = this.jwtService.sign(payload, { expiresIn: '7d' });
+  private generateUserWithToken(payload: { id: string }) {
+    const accessToken = this.jwtService.sign(payload, {
+      secret: this.configService.get<string>('JWT_SECRET'),
+      expiresIn: this.configService.get<string>('JWT_EXPIRES_IN'),
+    });
+    const refreshToken = this.jwtService.sign(payload, {
+      secret: this.configService.get<string>('JWT_REFRESH_TOKEN_SECRET'),
+      expiresIn: this.configService.get<string>('JWT_REFRESH_TOKEN_EXPIRES_IN'),
+    });
     return {
       user: {
         id: payload.id,
-        email: payload.email,
-        name: payload.name,
       },
       accessToken,
       refreshToken,
@@ -67,24 +70,28 @@ export class AuthService {
     return this.generateUserWithToken(payload);
   }
 
-  // Could I use different secret key for refresh token ? / so not the accessToken
   async refresh(userId: string, refreshToken: string) {
     if (!refreshToken) {
       throw new UnauthorizedException('No refresh token provided');
     }
 
     try {
-      const payload: any = this.jwtService.verify(refreshToken);
+      const payload: any = this.jwtService.verify(refreshToken, {
+        secret: this.configService.get<string>('JWT_REFRESH_TOKEN_SECRET'),
+      });
+
       if (payload.id !== userId) {
         throw new UnauthorizedException('Token does not match user');
       }
 
       const user = await this.usersService.findOne(userId);
       if (!user) throw new UnauthorizedException('User not found');
-
       const newAccessToken = this.jwtService.sign(
         { id: user.id, email: user.email, name: user.name },
-        { expiresIn: '1h' },
+        {
+          secret: this.configService.get<string>('JWT_SECRET'),
+          expiresIn: this.configService.get<string>('JWT_EXPIRES_IN'),
+        },
       );
 
       return {

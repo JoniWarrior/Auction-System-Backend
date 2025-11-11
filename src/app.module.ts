@@ -8,7 +8,7 @@ import { AuctionsModule } from './module/auctions/auctions.module';
 import { AuthModule } from './auth/auth.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { NotificationsModule } from './module/notifications/notifications.module';
-import { CONFIG } from './dynamic-module/CONFIG';
+import { CONFIG } from './dynamic-module/config';
 import { DB } from './dynamic-module/db';
 
 @Module({
