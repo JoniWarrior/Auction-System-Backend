@@ -4,6 +4,7 @@ import {
   Logger,
   BadRequestException,
   UnauthorizedException,
+  Inject,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Not, Repository, LessThan, FindOptionsWhere, ILike } from 'typeorm';
@@ -17,16 +18,25 @@ import { FindAuctionsOptions, PaginationQuery } from 'src/def/pagination-query';
 import moment from 'moment';
 import { User } from 'src/entity/user.entity';
 import { Item } from 'src/entity/item.entity';
+import { x } from 'joi';
+import { ConfigService } from '@nestjs/config';
+import { PokApiService } from '../external/pok-api.service';
 
 @Injectable()
 export class AuctionsService {
   private readonly logger = new Logger(AuctionsService.name);
-
+  private readonly merchantId: string;
   constructor(
     @InjectRepository(Auction)
     private auctionsRepository: Repository<Auction>,
     private helperService: AuctionBiddingHelperService,
-  ) {}
+
+    @Inject()
+    private readonly pokApiService: PokApiService,
+    private readonly configService: ConfigService,
+  ) {
+    this.merchantId = this.configService.get<string>('POK_MERCHANT_ID') ?? '';
+  }
 
   private async getAuction(
     id: string,
@@ -112,14 +122,28 @@ export class AuctionsService {
     };
   }
 
-  async create(createAuction: CreateAuction): Promise<Auction> {
+  async create(
+    createAuction: CreateAuction,
+    ownerId: string,
+  ): Promise<Auction> {
     const { startingPrice, endTime, itemId } = createAuction;
+    const now = moment();
+    const maxAllowedEndTime = moment().add(30, 'days');
+
+    if (moment(endTime).isAfter(maxAllowedEndTime)) {
+      throw new Error('Auction End Time cannot be more than 30 days from now.');
+    }
+
+    if (moment(endTime).isBefore(now)) {
+      throw new Error('Auction End Time cannot be in the past!');
+    }
 
     const auction = this.auctionsRepository.create({
       startingPrice,
       endTime,
       currentPrice: startingPrice,
       itemId,
+      ownerId,
     });
     return this.auctionsRepository.save(auction);
   }
@@ -256,6 +280,17 @@ export class AuctionsService {
       );
 
       auction.winningBid = winningBid;
+
+      // No need to Capture money of winner, capture per cdo bid
+
+      if (winningBid?.transaction && winningBid?.transaction?.sdkOrderId) {
+        await this.pokApiService.capture(
+          this.merchantId,
+          winningBid?.transaction?.sdkOrderId,
+          { amount: winningBid?.amount },
+        );
+        console.log('Winner captured successfully: ', winningBid?.transaction);
+      }
     } else {
       this.logger.log(`Auction ${auctionId} closed with no bids`);
     }

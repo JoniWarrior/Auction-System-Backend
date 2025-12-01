@@ -7,12 +7,14 @@ import { Item } from '../../entity/item.entity';
 import { Bidding } from '../../entity/bidding.entity';
 import { ItemsModule } from 'src/module/items/items.module';
 import { SharedModule } from '../shared/shared.module';
+import { PokApiModule } from '../external/pok-api.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Auction, Item, Bidding]),
     ItemsModule,
     SharedModule,
+    PokApiModule,
   ],
   controllers: [AuctionsController],
   providers: [AuctionsService],

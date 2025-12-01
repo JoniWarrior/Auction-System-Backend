@@ -35,8 +35,9 @@ export class AuctionsController {
       ),
     )
     createAuction: CreateAuction,
+    @CurrentLoggedInUser('id') ownerId: string,
   ) {
-    return this.auctionsService.create(createAuction);
+    return this.auctionsService.create(createAuction, ownerId);
   }
 
   @UseGuards(JwtAuthGuard)

@@ -79,11 +79,19 @@ export class AuctionBiddingHelperService {
     });
   }
 
+  // async getHighestBid(auction: Auction): Promise<Bidding | null> {
+  //   if (!auction?.biddings?.length) return null;
+  //   return auction.biddings.reduce(
+  //     (max, b) => (b.amount > max.amount ? b : max),
+  //     auction.biddings[0],
+  //   );
+  // }
   async getHighestBid(auction: Auction): Promise<Bidding | null> {
-    if (!auction?.biddings?.length) return null;
-    return auction.biddings.reduce(
-      (max, b) => (b.amount > max.amount ? b : max),
-      auction.biddings[0],
-    );
+    if (!auction?.id) return null;
+    return this.biddingsRepository.findOne({
+      where: { auctionId: auction.id },
+      relations: ['transaction', 'bidder'],
+      order: { amount: 'DESC' },
+    });
   }
 }

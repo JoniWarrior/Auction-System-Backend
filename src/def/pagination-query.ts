@@ -10,3 +10,10 @@ export interface FindAuctionsOptions extends PaginationQuery {
   bidderId?: string;
   relations?: string[];
 }
+
+export interface FindTransactionsOptions extends PaginationQuery {
+  status?: any; // TransactionStatus or 'all'
+  bidderId?: string;
+  merchantId?: string;
+  relations?: string[];
+}

@@ -5,9 +5,12 @@ import {
   CreateDateColumn,
   OneToMany,
   DeleteDateColumn,
+  OneToOne,
 } from 'typeorm';
 import { Item } from './item.entity';
 import { Bidding } from './bidding.entity';
+import { Auction } from './auction.entity';
+import { Card } from './credit-card.entity';
 
 @Entity()
 export class User {
@@ -36,4 +39,12 @@ export class User {
 
   @DeleteDateColumn()
   deletedAt?: Date;
+
+  @OneToMany(() => Auction, (auction) => auction.owner, { onDelete: 'CASCADE' })
+  auctions: Auction[];
+
+  @OneToMany(() => Card, (creditCard) => creditCard.user, {
+    onDelete: 'SET NULL',
+  })
+  creditCards: Card[];
 }

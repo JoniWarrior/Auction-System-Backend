@@ -8,11 +8,12 @@ import {
   JoinColumn,
   Index,
   DeleteDateColumn,
+  ManyToOne,
 } from 'typeorm';
 import { Item } from './item.entity';
 import { Bidding } from './bidding.entity';
-import { AuctionStatus } from "../def/enums/auction_status";
-
+import { AuctionStatus } from '../def/enums/auction_status';
+import { User } from './user.entity';
 @Entity('auctions')
 @Index(['status', 'endTime'])
 export class Auction {
@@ -38,8 +39,8 @@ export class Auction {
   @JoinColumn({ name: 'itemId' })
   item: Item;
 
-  @Column({name : "itemId"})
-  readonly itemId : string
+  @Column({ name: 'itemId' })
+  readonly itemId: string;
 
   @OneToMany(() => Bidding, (bidding) => bidding.auction, {
     onDelete: 'CASCADE',
@@ -50,9 +51,16 @@ export class Auction {
   @JoinColumn({ name: 'winnerBidId' })
   winningBid: Bidding;
 
-  @Column({name : "winnerBidId", nullable : true})
-  readonly winningBidId : string
+  @Column({ name: 'winnerBidId', nullable: true })
+  readonly winningBidId: string;
 
   @DeleteDateColumn()
   deletedAt?: Date;
+
+  @ManyToOne(() => User, (user) => user.auctions, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'ownerId' })
+  owner: User;
+
+  @Column({ name: 'ownerId', nullable: false })
+  ownerId: string;
 }

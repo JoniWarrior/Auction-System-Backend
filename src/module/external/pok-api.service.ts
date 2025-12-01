@@ -1,0 +1,413 @@
+import {
+  Body,
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
+import { HttpService } from '@nestjs/axios';
+import { ConfigService } from '@nestjs/config';
+import { AuthResponse } from './interfaces/auth-response.interface';
+import { CreateTransactionDto } from './types/create-transaction.dto';
+import { TransactionResponse } from './interfaces/create-transaction-response.interface';
+import { RetrieveOrderResponse } from './interfaces/retrieve-order.interface';
+import { TransactionStatus } from '../../def/enums/transaction_status';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Transaction } from '../../entity/transaction.entity';
+import { Repository } from 'typeorm';
+import { CaptureDto } from './types/capture.dto';
+import { TokenizeCardDto } from '../../def/types/cards/createCard.type';
+import { Check3dsEnrollmentType } from '../../def/types/cards/check3dsEnrollment.type';
+
+@Injectable()
+export class PokApiService {
+  private accessToken: string | null = null;
+  private refreshToken: string | null = null;
+  private tokenExpiry: Date | null = null;
+  private readonly keyId: string | null = null;
+  private readonly keySecret: string | null = null;
+  private readonly baseUrl: string | null = null;
+  private readonly merchantId: string | null = null;
+
+  constructor(
+    private readonly httpService: HttpService,
+    private readonly configService: ConfigService,
+
+    @InjectRepository(Transaction)
+    private readonly transactionRepository: Repository<Transaction>,
+  ) {
+    this.baseUrl = this.configService.get<string>('POK_STAGE_BASE_URL') ?? '';
+    this.keyId = this.configService.get<string>('POK_KEY_ID') ?? '';
+    this.keySecret = this.configService.get<string>('POK_KEY_SECRET') ?? '';
+    this.merchantId = this.configService.get<string>('POK_MERCHANT_ID') ?? '';
+  }
+
+  private async authenticate(): Promise<void> {
+    try {
+      const keyId = this.keyId;
+      const keySecret = this.keySecret;
+
+      const payload = { keyId, keySecret };
+      const loginUrl = `${this.baseUrl}/auth/sdk/login`;
+      const res = await this.httpService.axiosRef.post<AuthResponse>(
+        loginUrl,
+        payload,
+        { headers: { 'Content-Type': 'application/json' } },
+      );
+      const tokenData = res.data.data;
+      console.log('Token Data authenticating: ', tokenData);
+      this.accessToken = tokenData.accessToken;
+      this.refreshToken = tokenData.refreshToken;
+      console.log('accessToken: after login', this.accessToken);
+      const expiresInMs = parseInt(tokenData.expiresIn, 10);
+      this.tokenExpiry = new Date(Date.now() + expiresInMs - 60000);
+    } catch (err) {
+      throw new Error(`Failed to authenticate with POK API: ${err.message}`);
+    }
+  }
+
+  private async refreshTokens(): Promise<void> {
+    try {
+      const payload = {
+        refreshToken: this.refreshToken,
+      };
+      const refreshUrl = `${this.baseUrl}/auth/sdk/refresh`;
+      const res = await this.httpService.axiosRef.post<AuthResponse>(
+        refreshUrl,
+        payload,
+      );
+      const { accessToken, refreshToken, expiresIn } = res.data.data;
+      this.accessToken = accessToken;
+      this.refreshToken = refreshToken;
+      const expiresInMs = parseInt(expiresIn, 10);
+      this.tokenExpiry = new Date(Date.now() + expiresInMs - 60000);
+    } catch (err) {
+      this.refreshToken = null;
+      await this.authenticate();
+    }
+  }
+
+  public async ensureValidToken(): Promise<void> {
+    const now = new Date();
+    if (!this.accessToken) {
+      await this.authenticate();
+      console.log('accessToken after ensureValidToken:', this.accessToken);
+    } else if (this.tokenExpiry && this.tokenExpiry < now) {
+      await this.refreshTokens();
+    }
+  }
+
+  public async createTransaction(
+    payload: CreateTransactionDto,
+  ): Promise<TransactionResponse> {
+    try {
+      await this.ensureValidToken();
+      const createTransactionUrl = `${this.baseUrl}/merchants/${this.merchantId}/sdk-orders`;
+      const res = await this.httpService.axiosRef.post(
+        createTransactionUrl,
+        payload,
+        {
+          headers: { Authorization: `Bearer ${this.accessToken}` },
+        },
+      );
+      return res.data;
+    } catch (err: any) {
+      const message =
+        err.response?.data?.message || err.message || 'Unknown error';
+      throw new InternalServerErrorException(
+        `Failed to create transaction: ${message}`,
+      );
+    }
+  }
+
+  public async getTransactionById(id: string): Promise<RetrieveOrderResponse> {
+    try {
+      await this.ensureValidToken();
+      const url = `${this.baseUrl}/merchants/${this.merchantId}/sdk-orders/${id}`;
+
+      const { data } =
+        await this.httpService.axiosRef.get<RetrieveOrderResponse>(url, {
+          headers: {
+            Authorization: `Bearer ${this.accessToken}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+      console.log('Transaction retrieved successfully:', data);
+      return data;
+    } catch (err: any) {
+      const message =
+        err.response?.data?.message || err.message || 'Unknown error';
+      throw new InternalServerErrorException(
+        `Failed to retrieve transaction: ${message}`,
+      );
+    }
+  }
+
+  async handleTransactionWebhook(@Body() payload: any) {
+    try {
+      const sdkOrderId = payload?.data?.sdkOrder?.id;
+      console.log('Id: ', sdkOrderId);
+      const status = payload?.data?.sdkOrder?.status;
+      console.log('Status: ', status);
+
+      if (!sdkOrderId || !status) {
+        return { success: false, message: 'Missing sdkOrderId or status' };
+      }
+
+      // Find transaction in MY DB
+      const transaction = await this.transactionRepository.findOne({
+        where: { sdkOrderId },
+        relations: ['bidding'],
+      });
+
+      if (!transaction) {
+        throw new NotFoundException(`Transaction ${sdkOrderId} not found`);
+      }
+
+      transaction.status =
+        status === 'SUCCESS'
+          ? TransactionStatus.SUCCESS
+          : TransactionStatus.FAIL;
+
+      await this.transactionRepository.save(transaction);
+      return { success: true };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  public async capture(
+    merchantId: string,
+    sdkOrderId: string,
+    body: CaptureDto,
+  ): Promise<any> {
+    await this.ensureValidToken();
+    const url = `${this.baseUrl}/merchants/${merchantId}/sdk-orders/${sdkOrderId}/capture`;
+
+    const payload: any = {
+      amount: body.amount,
+    };
+    if (body.splitWith) {
+      payload.splitWith = {
+        merchantId: body.splitWith.merchantId,
+        amount: body.splitWith.amount,
+      };
+    }
+    const { data } = await this.httpService.axiosRef.post(url, payload, {
+      headers: {
+        Authorization: `Bearer ${this.accessToken}`,
+      },
+    });
+    const transaction = await this.transactionRepository.findOne({
+      where: { sdkOrderId },
+    });
+    if (!transaction)
+      throw new NotFoundException(`Transaction ${sdkOrderId} not found`);
+    transaction.status = TransactionStatus.SUCCESS;
+    await this.transactionRepository.save(transaction);
+    console.log('Transaction captured successfully:', data);
+    console.log('My Transaction data captured Successfully:', transaction);
+    return data;
+  }
+
+  // cancel transaction
+  // {{baseUrl}}/merchants/:merchantId/sdk-orders/:sdkOrderId/cancel
+  public async cancelTransaction(
+    merchantId: string,
+    sdkOrderId: string,
+    cancellationReason?: string,
+  ): Promise<any> {
+    await this.ensureValidToken();
+    console.log('accessToken after cancel test: ', this.accessToken);
+    const url = `${this.baseUrl}/merchants/${merchantId}/sdk-orders/${sdkOrderId}/cancel`;
+    const payload: any = {};
+    if (cancellationReason) {
+      payload.cancellationReason = cancellationReason;
+    }
+    const transaction = await this.transactionRepository.findOne({
+      where: { sdkOrderId },
+    });
+    if (!transaction) {
+      throw new NotFoundException(`Transaction ${sdkOrderId} not found`);
+    }
+    transaction.status = TransactionStatus.CANCELLED;
+    transaction.cancelledAt = new Date();
+    await this.transactionRepository.save(transaction);
+    const { data } = await this.httpService.axiosRef.post(url, payload, {
+      headers: { Authorization: `Bearer ${this.accessToken}` },
+    });
+    transaction.status = TransactionStatus.CANCELLED;
+    transaction.cancelledAt = new Date();
+    return data;
+  }
+
+  // {{baseUrl}}/merchants/:merchantId/sdk-orders/:sdkOrderId/refund
+  public async refund(
+    merchantId: string,
+    sdkOrderId: string,
+    refundReason?: string,
+    refundAmount?: number,
+  ): Promise<any> {
+    await this.ensureValidToken();
+
+    const url = `${this.baseUrl}/merchants/${merchantId}/sdk-orders/${sdkOrderId}/refund`;
+
+    const payload: any = {};
+    if (refundReason) payload.refundReason = refundReason;
+    if (refundAmount) payload.refundAmount = refundAmount;
+
+    const { data } = await this.httpService.axiosRef.post(url, payload, {
+      headers: { Authorization: `Bearer ${this.accessToken}` },
+    });
+    return data;
+  }
+
+  public async setupTokenized3DS(
+    creditDebitCardId: string,
+    sdkOrderId: string,
+  ): Promise<any> {
+    await this.ensureValidToken();
+    const url = `${this.baseUrl}/credit-debit-cards/${creditDebitCardId}/setup-tokenized-3ds`;
+    const payload: any = { sdkOrder: { id: sdkOrderId } };
+    const { data } = await this.httpService.axiosRef.post(url, payload, {
+      headers: { Authorization: `Bearer ${this.accessToken}` },
+    });
+
+    if (data.statusCode === 200) {
+      return data.data.payerAuthentication;
+    } else {
+      throw new Error(`3DS setup failed: ${data.message || 'Unknown error'}`);
+    }
+  }
+  // Response from doc :
+  // {
+  //   "statusCode": 200,
+  //   "serverStatusCode": 200,
+  //   "data": {
+  //     "payerAuthentication": {
+  //       "deviceDataCollection": {
+  //         "accessToken": "{{accessToken}}",
+  //         "url": "{{dataCollectionUrl}}"
+  //       },
+  //       "creditDebitCard": {
+  //         "id": "{{creditDebitCardId}}"
+  //       },
+  //       "payerAuthSetupReferenceId": "{{payerAuthSetupReferenceId}}"
+  //     }
+  //   },
+  //   "message": "Success",
+  //   "requestId": "1680871146932:adn20.icc-al.org:31689:lg6j3bs5:10001",
+  //   "errors": []
+  // }
+
+  public async tokenizeGuestCard(dto: TokenizeCardDto) {
+    await this.ensureValidToken();
+    const payload = {
+      csFlexCard: dto.csFlexCard,
+      billingInfo: dto.billingInfo,
+      securityCode: dto.securityCode,
+    };
+
+    const url = `${this.baseUrl}/credit-debit-cards/tokenize-guest-card`;
+    const response = await this.httpService.axiosRef.post(url, payload, {
+      headers: { Authorization: `Bearer ${this.accessToken}` },
+    });
+    return response.data.data.creditDebitCard;
+  }
+  // Response from doc :
+  // {
+  //   "statusCode": 200,
+  //   "serverStatusCode": 200,
+  //   "data": {
+  //     "creditDebitCard": {
+  //       "id": "{{creditDebitCardId}}",
+  //       "holderFirstName": "test",
+  //       "holderLastName": "test",
+  //       "hiddenNumber": "400000XXXXXX1091",
+  //       "billingInfo": {
+  //         "firstName": "test",
+  //         "lastName": "test",
+  //         "address1": "test",
+  //         "locality": "Tirana",
+  //         "administrativeArea": "",
+  //         "postalCode": null,
+  //         "countryCode": "AL",
+  //         "sameAsShipping": false,
+  //         "email": "test@example.com",
+  //         "billableType": "guest"
+  //       }
+  //     }
+  //   },
+  //   "message": "Success",
+  //   "requestId": "1680870833573:adn20.icc-al.org:31689:lg6j3bs5:10000",
+  //   "errors": []
+  // }
+
+  // {{baseUrl}}/credit-debit-cards/{{creditDebitCardId}}/check-3ds-enrollment
+  public async check3dsEnrollment(
+    creditDebitCardId: string,
+    dto: Check3dsEnrollmentType,
+  ): Promise<any> {
+    try {
+      await this.ensureValidToken();
+      const url = `${this.baseUrl}/credit-debit-cards/${creditDebitCardId}/check-3ds-enrollment`;
+      const payload = {
+        csAuthentication: dto.csAuthentication,
+        sdkOrderId: dto.sdkOrderId,
+        payerAuthSetupReferenceId: dto.payerAuthSetupReferenceId,
+      };
+      const { data } = await this.httpService.axiosRef.post(url, payload, {
+        headers: { Authorization: `Bearer ${this.accessToken}` },
+      });
+
+      if (data.statusCode === 200) {
+        return data.data.payerAuthenticationEnrollment;
+      } else {
+        throw new Error(
+          `3DS enrollment check failed: ${data.message || 'Unknown error'}`,
+        );
+      }
+    } catch (err) {
+      throw new InternalServerErrorException(
+        `Failed to check 3DS enrollment: ${err.message || err}`,
+      );
+    }
+  }
+
+  // {
+  //   "statusCode": 200,
+  //   "serverStatusCode": 200,
+  //   "data": {
+  //     "payerAuthenticationEnrollment": {
+  //       "status": "PENDING_AUTHENTICATION",
+  //       "stepUp": {
+  //         "accessToken": "{{acessToken}}",
+  //         "url": "{{stepUpUrl}}"
+  //       },
+  //       "MD": "{{creditDebitCardId}}"
+  //     }
+  //   },
+  //   "message": "Success",
+  //   "requestId": "1680873256167:adn20.icc-al.org:31689:lg6j3bs5:10002",
+  //   "errors": []
+  // }
+
+  // {{baseUrl}}/sdk-orders/{{sdkOrderId}}/guest-confirm
+  public async guestConfirm(
+    sdkOrderId: string,
+    creditCardId: string,
+    consumerAuthenticationInformation: any,
+  ): Promise<any> {
+    await this.ensureValidToken();
+    const url = `${this.baseUrl}/sdk-orders/${sdkOrderId}/guest-confirm`;
+
+    const payload = {
+      creditCardId,
+      consumerAuthenticationInformation,
+    };
+    const { data } = await this.httpService.axiosRef.post(url, payload, {
+      headers: { Authorization: `Bearer ${this.accessToken}` },
+    });
+    return data.data.sdkOrder;
+  }
+}

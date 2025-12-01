@@ -19,11 +19,13 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "typeorm": "ts-node --transpile-only ./node_modules/typeorm/cli.js",
     "migration:create": "npm run typeorm -- migration:create",
-    "migration:generate": "npm run typeorm -- migration:generate",
+    "migration:generate": "ts-node --transpile-only ./node_modules/typeorm/cli.js -d src/datasource.ts migration:generate",
     "migration:run": "ts-node --transpile-only ./node_modules/typeorm/cli.js -d src/datasource.ts migration:run",
     "migration:revert": "ts-node --transpile-only ./node_modules/typeorm/cli.js -d src/datasource.ts migration:revert"
   },
   "dependencies": {
+    "@nestjs-modules/mailer": "^2.0.2",
+    "@nestjs/axios": "^4.0.1",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.0.1",
@@ -43,6 +45,7 @@
     "moment": "^2.30.1",
     "multer": "^2.0.2",
     "multer-storage-cloudinary": "^4.0.0",
+    "nodemailer": "^7.0.10",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "pg": "^8.16.3",
