@@ -1,0 +1,34 @@
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
+import { User } from './user.entity';
+
+@Entity()
+export class Card {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  // could add type (Visa / Mastercard)
+  @Column()
+  pokCardId: string;
+
+  @Column()
+  hiddenNumber: string;
+
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @Column({ default: false })
+  isDefault: boolean;
+
+  @ManyToOne(() => User, (user) => user.creditCards, {
+    onDelete: 'SET NULL',
+  })
+  @JoinColumn({ name: 'userId' })
+  user: User;
+}

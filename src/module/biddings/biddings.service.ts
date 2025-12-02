@@ -157,7 +157,6 @@ export class BiddingsService {
       });
       const bidderEmail = user?.email;
       if (!bidderEmail) throw new NotFoundException('Bidder email not found');
-      console.log('Bidder Email: ', bidderEmail);
       await this.emailService.sendOutBidEmail(bidderEmail, {
         auctionTitle: auction?.item?.title,
         newBidAmount: amount,

@@ -1,0 +1,17 @@
+doctype html
+html
+    head
+        meta(charset="UTF-8")
+        title You have been outbid!
+    body
+        h2(style="color:#333;") You have been outbid!
+        p Hello,
+        p Someone has placed a higher bid in the auction:
+        p
+            strong #{auctionTitle}
+        p The new bid amount is:
+        p
+            strong $#{newBidAmount}
+        p If you want to win, consider placing a new bid.
+        hr
+        small This is an automated message from Auction App.

@@ -6,7 +6,7 @@ import { Auction } from './entity/auction.entity';
 import { Bidding } from './entity/bidding.entity';
 import { Notification } from './entity/notifications.entity';
 import { Transaction } from './entity/transaction.entity';
-import { Card } from './entity/credit-card.entity';
+import { Card } from './entity/card.entity';
 
 dotenv.config();
 

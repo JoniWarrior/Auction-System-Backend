@@ -1,6 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { ValidationPipe } from '@nestjs/common';
+import { BadRequestException, ValidationPipe } from '@nestjs/common';
 import { ErrorResponseNormalizerFilter } from './filter/error-response-normalizer.filter';
 import { AuditInterceptor } from 'src/interceptor/main.interceptor';
 import { ResponseNormalizerInterceptor } from './interceptor/response-normalizer.interceptor';
@@ -8,11 +8,22 @@ import { ResponseNormalizerInterceptor } from './interceptor/response-normalizer
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  // app.useGlobalPipes(
+  //   new ValidationPipe({
+  //     whitelist: true,
+  //     forbidNonWhitelisted: true,
+  //     transform: true,
+  //   }),
+  // );
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
+      whitelist: false,
+      forbidNonWhitelisted: false,
       transform: true,
+      exceptionFactory: (errors) => {
+        console.log(JSON.stringify(errors, null, 2)); // DEBUG VALIDATION
+        return new BadRequestException(errors);
+      },
     }),
   );
 

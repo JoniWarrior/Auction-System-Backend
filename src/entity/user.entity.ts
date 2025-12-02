@@ -10,7 +10,7 @@ import {
 import { Item } from './item.entity';
 import { Bidding } from './bidding.entity';
 import { Auction } from './auction.entity';
-import { Card } from './credit-card.entity';
+import { Card } from './card.entity';
 
 @Entity()
 export class User {

@@ -12,7 +12,7 @@ import { CONFIG } from './dynamic-module/config';
 import { DB } from './dynamic-module/db';
 import { TransactionsModule } from './module/transactions/transactions.module';
 import { PokApiModule } from './module/external/pok-api.module';
-import { Card } from './entity/credit-card.entity';
+import { Card } from './entity/card.entity';
 import { CardsModule } from './module/cards/cards.module';
 
 @Module({
