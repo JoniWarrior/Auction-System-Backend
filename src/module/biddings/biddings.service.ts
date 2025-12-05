@@ -75,26 +75,32 @@ export class BiddingsService {
       );
     }
     if (currentHighestBid && currentHighestBid.bidder.id !== bidderId) {
-      const previousBidder = currentHighestBid.bidder;
+      // const previousBidder = currentHighestBid?.bidder;
       const previousTransaction = currentHighestBid?.transaction?.sdkOrderId;
       console.log('Previous transaction', previousTransaction);
 
       if (previousTransaction) {
         try {
           console.log(
-            `Refunding previous highest bidder ${previousBidder.id} for amount ${currentHighestBid.amount}`,
+            `Canceling the previous transaction: `,
+            previousTransaction,
           );
-
-          await this.pokApiService.refund(
+          // ? No refund because the money was not capture but freezed in the pok account
+          // instead the transaction should be cancelled and the money should be returned to the bidder
+          // await this.pokApiService.refund(
+          //   this.merchantId,
+          //   previousTransaction,
+          //   'Outbid refund',
+          //   currentHighestBid.amount,
+          // );
+          await this.pokApiService.cancelTransaction(
             this.merchantId,
             previousTransaction,
-            'Outbid refund',
-            currentHighestBid.amount,
-          ); // call POK for refunding the previous highest bidder
-
+            'Previous Transaction cancelled',
+          );
           await this.transactionsRepository.update(
             { sdkOrderId: previousTransaction },
-            { status: TransactionStatus.REFUNDED },
+            { status: TransactionStatus.CANCELLED },
           );
         } catch (err) {
           console.log('Error in pok api service', err);
@@ -169,8 +175,6 @@ export class BiddingsService {
       uniquePastBidders,
     );
     // TODO : capture behet automatikisht ne back dhe refund pas cdo bidi ose kur mbaron auctioni
-
-    // their webhook
     return fullBid;
   }
 

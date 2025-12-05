@@ -261,7 +261,7 @@ export class AuctionsService {
       'item.seller',
     ]);
 
-    if (currentUserId && currentUserId !== auction.item.seller.id) {
+    if (currentUserId && currentUserId !== auction?.item?.seller?.id) {
       throw new UnauthorizedException(
         'Only the owner of the auction can close it!',
       );
@@ -280,9 +280,7 @@ export class AuctionsService {
       );
 
       auction.winningBid = winningBid;
-
-      // No need to Capture money of winner, capture per cdo bid
-
+      // Capture money of winner
       if (winningBid?.transaction && winningBid?.transaction?.sdkOrderId) {
         await this.pokApiService.capture(
           this.merchantId,
