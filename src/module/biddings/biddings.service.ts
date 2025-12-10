@@ -11,14 +11,12 @@ import { Bidding } from '../../entity/bidding.entity';
 import { ILike, Repository } from 'typeorm';
 import { BiddingsGateway } from './biddings-gateway';
 import { AuctionBiddingHelperService } from '../shared/auction-bidding-helper.service';
-import { User } from 'src/entity/user.entity';
 import { PaginationQuery } from 'src/def/pagination-query';
 import { PokApiService } from '../external/pok-api.service';
 import { Transaction } from '../../entity/transaction.entity';
-import { TransactionStatus } from '../../def/enums/transaction_status';
 import { ConfigService } from '@nestjs/config';
-import { CreateTransactionDto } from '../external/types/create-transaction.dto';
 import { EmailService } from '../email/email.service';
+import { UsersService } from '../users/users.service';
 
 @Injectable()
 export class BiddingsService {
@@ -26,9 +24,6 @@ export class BiddingsService {
   constructor(
     @InjectRepository(Bidding)
     private biddingsRepository: Repository<Bidding>,
-
-    @InjectRepository(User)
-    private usersRepository: Repository<User>,
 
     @InjectRepository(Transaction)
     private transactionsRepository: Repository<Transaction>,
@@ -39,23 +34,21 @@ export class BiddingsService {
     private readonly pokApiService: PokApiService,
     private readonly configService: ConfigService,
     private readonly emailService: EmailService,
+    private readonly userService: UsersService,
   ) {
     this.merchantId = this.configService.get<string>('POK_MERCHANT_ID') ?? '';
   }
 
-  async create(
-    createBidding: CreateBidding,
-    bidderId: string,
-  ): Promise<Bidding> {
+  async create(createBidding: CreateBidding, bidderId: string): Promise<any> {
+    // 1. Take auctionId and amount from frontend
     const { auctionId, amount } = createBidding;
 
+    // 2. Validate auction and bidder
     const auction = await this.helperService.validateAuctionForBidding(
       auctionId,
       bidderId,
     );
-    const bidder = await this.usersRepository.findOne({
-      where: { id: bidderId },
-    });
+    const bidder = await this.userService.findOne(bidderId);
 
     if (!bidder) {
       throw new NotFoundException(
@@ -74,108 +67,55 @@ export class BiddingsService {
         `Bid amount must be higher than $${highestAmount}`,
       );
     }
+
+    let previousTransaction: string | null = null;
+    let previousBidderEmail: string | null = null;
     if (currentHighestBid && currentHighestBid.bidder.id !== bidderId) {
-      // const previousBidder = currentHighestBid?.bidder;
-      const previousTransaction = currentHighestBid?.transaction?.sdkOrderId;
-      console.log('Previous transaction', previousTransaction);
-
-      if (previousTransaction) {
-        try {
-          console.log(
-            `Canceling the previous transaction: `,
-            previousTransaction,
-          );
-          // ? No refund because the money was not capture but freezed in the pok account
-          // instead the transaction should be cancelled and the money should be returned to the bidder
-          // await this.pokApiService.refund(
-          //   this.merchantId,
-          //   previousTransaction,
-          //   'Outbid refund',
-          //   currentHighestBid.amount,
-          // );
-          await this.pokApiService.cancelTransaction(
-            this.merchantId,
-            previousTransaction,
-            'Previous Transaction cancelled',
-          );
-          await this.transactionsRepository.update(
-            { sdkOrderId: previousTransaction },
-            { status: TransactionStatus.CANCELLED },
-          );
-        } catch (err) {
-          console.log('Error in pok api service', err);
-        }
-      }
+      previousTransaction = currentHighestBid?.transaction?.sdkOrderId;
+      previousBidderEmail = currentHighestBid?.bidder?.email;
     }
-    const transactionPayload: CreateTransactionDto = {
-      amount: createBidding?.amount,
-      currencyCode: 'ALL',
-      autoCapture: false,
-      description: `Biding for auction ${auction.id} by ${bidder.name} with value ${amount}`,
-      // ?
-      merchantCustomReference: this.merchantId,
-      // webhookUrl: 'https://63bd926533f0.ngrok-free.app//webhook/transaction',
-      webhookUrl: process.env.WEBHOOK_PROXY_URL,
-      products: [
-        {
-          name: auction?.item?.title,
-          quantity: 1,
-          price: createBidding.amount,
-        },
-      ],
-    };
-    const transactionResponse =
-      await this.pokApiService.createTransaction(transactionPayload);
-    console.log('POK Transaction in POK DB created: ', transactionResponse);
+    // 3. Save bidding in DB
+    const { id } = await this.biddingsRepository.save({
+      amount,
+      auctionId,
+      bidderId,
+    });
 
+    // 4. Update auction currentPrice and status
     const isFirstBid = (auction.biddings?.length ?? 0) === 0;
     const updatedAuction = await this.helperService.updateAuction(auction, {
       amount,
       isFirstBid,
     });
 
-    const bidding = this.biddingsRepository.create({
-      amount,
-      auctionId: updatedAuction.id,
-      bidderId,
-    });
-    const savedBid = await this.biddingsRepository.save(bidding);
-    const savedTransaction = await this.transactionsRepository.save({
-      sdkOrderId: transactionResponse?.data?.sdkOrder?.id,
-      status: TransactionStatus.ON_HOLD, // success after payment done
-      bidding: savedBid,
-    });
+    // 5. Broadcast events
     const fullBid = await this.biddingsRepository.findOneOrFail({
-      where: { id: savedBid.id },
+      where: { id },
       relations: ['auction', 'bidder', 'transaction'],
     });
-    console.log('Full Bid: ', fullBid);
+    console.log('Bid created: ', fullBid);
     this.biddingsGateway.broadcastNewBid(updatedAuction.id, fullBid);
 
     const pastBidders = auction.biddings
       .map((b) => b.bidder.id)
       .filter((id) => id !== bidderId);
     const uniquePastBidders = [...new Set(pastBidders)];
-    for (const bidderId of uniquePastBidders) {
-      const user = await this.usersRepository.findOne({
-        where: { id: bidderId },
-        select: ['email'],
-      });
-      const bidderEmail = user?.email;
-      if (!bidderEmail) throw new NotFoundException('Bidder email not found');
-      await this.emailService.sendOutBidEmail(bidderEmail, {
-        auctionTitle: auction?.item?.title,
-        newBidAmount: amount,
-      });
-    }
-
+    console.time('broadcastOutBid');
     await this.biddingsGateway.broadcastOutBid(
       updatedAuction.id,
       fullBid,
       uniquePastBidders,
     );
-    // TODO : capture behet automatikisht ne back dhe refund pas cdo bidi ose kur mbaron auctioni
-    return fullBid;
+    if (previousBidderEmail) {
+      await this.emailService.sendOutBidEmail(previousBidderEmail, {
+        auctionTitle: auction?.item?.title,
+        newBidAmount: amount,
+      });
+    }
+    return {
+      previousTransaction,
+      bidding: fullBid,
+    };
   }
 
   async findAll({ qs, pageSize, page }: PaginationQuery): Promise<Bidding[]> {

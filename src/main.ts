@@ -21,7 +21,6 @@ async function bootstrap() {
       forbidNonWhitelisted: false,
       transform: true,
       exceptionFactory: (errors) => {
-        console.log(JSON.stringify(errors, null, 2)); // DEBUG VALIDATION
         return new BadRequestException(errors);
       },
     }),

@@ -57,7 +57,6 @@ export class PokApiService {
       console.log('Token Data authenticating: ', tokenData);
       this.accessToken = tokenData.accessToken;
       this.refreshToken = tokenData.refreshToken;
-      console.log('accessToken: after login', this.accessToken);
       const expiresInMs = parseInt(tokenData.expiresIn, 10);
       this.tokenExpiry = new Date(Date.now() + expiresInMs - 60000);
     } catch (err) {
@@ -90,7 +89,6 @@ export class PokApiService {
     const now = new Date();
     if (!this.accessToken) {
       await this.authenticate();
-      console.log('accessToken after ensureValidToken:', this.accessToken);
     } else if (this.tokenExpiry && this.tokenExpiry < now) {
       await this.refreshTokens();
     }
@@ -146,9 +144,7 @@ export class PokApiService {
   async handleTransactionWebhook(@Body() payload: any) {
     try {
       const sdkOrderId = payload?.data?.sdkOrder?.id;
-      console.log('Id: ', sdkOrderId);
       const status = payload?.data?.sdkOrder?.status;
-      console.log('Status: ', status);
 
       if (!sdkOrderId || !status) {
         return { success: false, message: 'Missing sdkOrderId or status' };
@@ -165,7 +161,7 @@ export class PokApiService {
       }
 
       transaction.status =
-        status === 'SUCCESS'
+        status === TransactionStatus.SUCCESS.toUpperCase()
           ? TransactionStatus.SUCCESS
           : TransactionStatus.FAIL;
 
@@ -193,6 +189,7 @@ export class PokApiService {
         amount: body.splitWith.amount,
       };
     }
+    console.log('Payload for capture: ', payload);
     const { data } = await this.httpService.axiosRef.post(url, payload, {
       headers: {
         Authorization: `Bearer ${this.accessToken}`,
@@ -218,12 +215,13 @@ export class PokApiService {
     cancellationReason?: string,
   ): Promise<any> {
     await this.ensureValidToken();
-    console.log('accessToken after cancel test: ', this.accessToken);
     const url = `${this.baseUrl}/merchants/${merchantId}/sdk-orders/${sdkOrderId}/cancel`;
     const payload: any = {};
     if (cancellationReason) {
       payload.cancellationReason = cancellationReason;
     }
+
+    // My DB update step :
     const transaction = await this.transactionRepository.findOne({
       where: { sdkOrderId },
     });
@@ -233,11 +231,11 @@ export class PokApiService {
     transaction.status = TransactionStatus.CANCELLED;
     transaction.cancelledAt = new Date();
     await this.transactionRepository.save(transaction);
+    console.log('Previous Transaction cancelled successfully:', transaction);
+
     const { data } = await this.httpService.axiosRef.post(url, payload, {
       headers: { Authorization: `Bearer ${this.accessToken}` },
     });
-    transaction.status = TransactionStatus.CANCELLED;
-    transaction.cancelledAt = new Date();
     return data;
   }
 
@@ -314,34 +312,6 @@ export class PokApiService {
     });
     return response.data.data.creditDebitCard;
   }
-  // Response from doc :
-  // {
-  //   "statusCode": 200,
-  //   "serverStatusCode": 200,
-  //   "data": {
-  //     "creditDebitCard": {
-  //       "id": "{{creditDebitCardId}}",
-  //       "holderFirstName": "test",
-  //       "holderLastName": "test",
-  //       "hiddenNumber": "400000XXXXXX1091",
-  //       "billingInfo": {
-  //         "firstName": "test",
-  //         "lastName": "test",
-  //         "address1": "test",
-  //         "locality": "Tirana",
-  //         "administrativeArea": "",
-  //         "postalCode": null,
-  //         "countryCode": "AL",
-  //         "sameAsShipping": false,
-  //         "email": "test@example.com",
-  //         "billableType": "guest"
-  //       }
-  //     }
-  //   },
-  //   "message": "Success",
-  //   "requestId": "1680870833573:adn20.icc-al.org:31689:lg6j3bs5:10000",
-  //   "errors": []
-  // }
 
   // {{baseUrl}}/credit-debit-cards/{{creditDebitCardId}}/check-3ds-enrollment
   public async check3dsEnrollment(

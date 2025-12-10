@@ -271,23 +271,25 @@ export class AuctionsService {
       throw new BadRequestException('Auction has already finished');
     }
 
+    this.logger.log('Before determining winner: ');
+
     const { winningBid, winner, winningAmount } =
       await this.determineAuctionResult(auction);
+    this.logger.log('Winning Bid: ', winningBid);
 
     if (winningBid) {
-      this.logger.log(
-        `Auction ${auctionId} closed. Winner: ${winner?.name} with bid: ${winningAmount}`,
-      );
-
       auction.winningBid = winningBid;
       // Capture money of winner
       if (winningBid?.transaction && winningBid?.transaction?.sdkOrderId) {
-        await this.pokApiService.capture(
-          this.merchantId,
-          winningBid?.transaction?.sdkOrderId,
-          { amount: winningBid?.amount },
-        );
-        console.log('Winner captured successfully: ', winningBid?.transaction);
+        const sdkOrderId = winningBid?.transaction?.sdkOrderId;
+        console.log(sdkOrderId, 'Entereeeeeee');
+        try {
+          await this.pokApiService.capture(this.merchantId, sdkOrderId, {
+            amount: winningBid?.amount,
+          });
+        } catch (err) {
+          this.logger.error('Capturing winner: ', err);
+        }
       }
     } else {
       this.logger.log(`Auction ${auctionId} closed with no bids`);

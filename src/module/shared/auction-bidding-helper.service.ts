@@ -70,7 +70,6 @@ export class AuctionBiddingHelperService {
     if (isFirstBid && existingAuction.status !== AuctionStatus.ACTIVE) {
       existingAuction.status = AuctionStatus.ACTIVE;
     }
-
     const savedAuction = await this.auctionsRepository.save(existingAuction);
 
     return this.auctionsRepository.findOneOrFail({

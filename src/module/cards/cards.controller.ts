@@ -35,7 +35,6 @@ export class CardsController {
     @CurrentLoggedInUser('id') userId: string,
     @Body() dto: TokenizeCardDto,
   ) {
-    console.log('UserId after tokenizing card: ', userId);
     return this.cardsService.tokenizeGuestCard(userId, dto);
   }
 

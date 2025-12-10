@@ -35,7 +35,6 @@ export class BiddingsController {
     createBidding: CreateBidding,
     @CurrentLoggedInUser('id') bidderId: string,
   ) {
-    console.log('UserId after bidding: ', bidderId);
     return this.biddingsService.create(createBidding, bidderId);
   }
 

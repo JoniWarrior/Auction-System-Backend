@@ -1,16 +1,18 @@
-import { forwardRef, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Transaction } from '../../entity/transaction.entity';
 import { AuctionsModule } from '../auctions/auctions.module';
-import { BiddingsModule } from '../biddings/biddings.module';
+import { PokApiModule } from '../external/pok-api.module';
+import { TransactionsService } from './transactions.service';
+import { TransactionsController } from './transactions.controller';
 @Module({
   imports: [
     TypeOrmModule.forFeature([Transaction]),
     AuctionsModule,
-    forwardRef(() => BiddingsModule), // remove forwardRef later!
+    PokApiModule,
   ],
-  controllers: [],
-  providers: [],
-  exports: [],
+  controllers: [TransactionsController],
+  providers: [TransactionsService],
+  exports: [TransactionsService],
 })
 export class TransactionsModule {}

@@ -10,6 +10,7 @@ import {
 import { Server, Socket } from 'socket.io';
 import { NotificationsService } from '../notifications/notifications.service';
 import { AuctionsService } from '../auctions/auctions.service';
+import { UsersService } from '../users/users.service';
 
 @WebSocketGateway({
   cors: {
@@ -22,6 +23,7 @@ export class BiddingsGateway
   constructor(
     private readonly notificationsService: NotificationsService,
     private readonly auctionsService: AuctionsService,
+    private readonly usersService: UsersService,
   ) {}
 
   @WebSocketServer()
@@ -97,23 +99,26 @@ export class BiddingsGateway
   }
 
   @SubscribeMessage('startBidding')
-  handleStartBidding(
-    @MessageBody() data: { auctionId: string; userName: String },
+  async handleStartBidding(
+    @MessageBody() data: { auctionId: string; userId: string },
     @ConnectedSocket() client: Socket,
   ) {
+    // take userIds from front and sent their respective names back
+    const user = await this.usersService.findOne(data.userId);
+    console.log('From back to front: ', user?.name ?? 'Unknown User');
     client.to(`auction_${data.auctionId}`).emit('biddingIndicator', {
-      userName: data.userName,
+      userName: user?.name ?? 'Unknown User',
       isBidding: true,
     });
   }
 
-  @SubscribeMessage('stopBidding')
-  handleStopBidding(
-    @MessageBody() data: { auctionId: string; userName: string },
+  @SubscribeMessage('stopBidding') async handleStopBidding(
+    @MessageBody() data: { auctionId: string; userId: string },
     @ConnectedSocket() client: Socket,
   ) {
+    const user = await this.usersService.findOne(data.userId);
     client.to(`auction_${data.auctionId}`).emit('biddingIndicator', {
-      userName: data.userName,
+      userName: user?.name ?? 'Unknown User',
       isBidding: false,
     });
   }

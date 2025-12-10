@@ -28,6 +28,7 @@ export class Transaction {
 
   @OneToOne(() => Bidding, (bidding) => bidding.transaction, {
     onDelete: 'SET NULL',
+    nullable: true, // is null at first before payment confirm
   })
   @JoinColumn({ name: 'biddingId' })
   bidding: Bidding;
