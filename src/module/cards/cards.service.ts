@@ -7,6 +7,7 @@ import { User } from '../../entity/user.entity';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { PokApiService } from '../external/pok-api.service';
+import { RedisService } from '../redis/redis.service';
 
 @Injectable()
 export class CardsService {
@@ -22,6 +23,7 @@ export class CardsService {
 
     @Inject()
     private readonly pokApiService: PokApiService,
+    private readonly redisService: RedisService,
   ) {
     this.baseUrl = this.configService.get<string>('POK_STAGE_BASE_URL') ?? '';
   }
@@ -54,14 +56,17 @@ export class CardsService {
     });
     if (!card)
       throw new NotFoundException(`Card with id ${mySavedCardId} not found!`);
-    // could refactor this part:
     const creditDebitCardId = card.pokCardId;
-    const data = await this.pokApiService.setupTokenized3DS(
-      creditDebitCardId,
-      sdkOrderId,
-    );
-    console.log('Setup Tokenized 3DS Response: ', data);
-    return data;
+    console.log('Entering setUpTokenized with redis Service...');
+    console.log('My saved cardID: ', mySavedCardId);
+    return this.redisService.withResourceLock(mySavedCardId, async () => {
+      const data = await this.pokApiService.setupTokenized3DS(
+        creditDebitCardId,
+        sdkOrderId,
+      );
+      console.log('Setup Tokenized 3DS Response: ', data);
+      return data;
+    });
   }
   // async checkCardExistence(
   //   cardNumber: string,

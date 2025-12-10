@@ -1,13 +1,13 @@
 import {
-  Injectable,
-  NotFoundException,
-  Logger,
   BadRequestException,
-  UnauthorizedException,
   Inject,
+  Injectable,
+  Logger,
+  NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Not, Repository, LessThan, FindOptionsWhere, ILike } from 'typeorm';
+import { FindOptionsWhere, ILike, LessThan, Not, Repository } from 'typeorm';
 import { CreateAuction } from 'src/def/types/auction/create-auction';
 import { Auction } from '../../entity/auction.entity';
 import { Bidding } from '../../entity/bidding.entity';
@@ -18,9 +18,9 @@ import { FindAuctionsOptions, PaginationQuery } from 'src/def/pagination-query';
 import moment from 'moment';
 import { User } from 'src/entity/user.entity';
 import { Item } from 'src/entity/item.entity';
-import { x } from 'joi';
 import { ConfigService } from '@nestjs/config';
 import { PokApiService } from '../external/pok-api.service';
+import { RedisService } from '../redis/redis.service';
 
 @Injectable()
 export class AuctionsService {
@@ -34,6 +34,7 @@ export class AuctionsService {
     @Inject()
     private readonly pokApiService: PokApiService,
     private readonly configService: ConfigService,
+    private readonly redisService: RedisService,
   ) {
     this.merchantId = this.configService.get<string>('POK_MERCHANT_ID') ?? '';
   }
@@ -190,14 +191,16 @@ export class AuctionsService {
   }
 
   async findOne(id: string): Promise<Auction> {
-    const auction = await this.getAuction(id, [
-      'item',
-      'item.seller',
-      'biddings',
-      'biddings.bidder',
-      'winningBid',
-    ]);
-    return auction;
+    return this.redisService.withResourceLock(id, async () => {
+      const auction = await this.getAuction(id, [
+        'item',
+        'item.seller',
+        'biddings',
+        'biddings.bidder',
+        'winningBid',
+      ]);
+      return auction;
+    });
   }
 
   async update(id: string, data: Partial<Auction>): Promise<Auction> {
@@ -217,12 +220,16 @@ export class AuctionsService {
   }
 
   async findBiddingsOfAuction(auctionId: string): Promise<Bidding[]> {
-    const biddings = await this.helperService.findBiddingsOfAuction(auctionId);
-    if (!biddings)
-      throw new NotFoundException(
-        `No bidings found for the auction ${auctionId}`,
-      );
-    return biddings;
+    //  TODO : Remove later redisService usage
+    return this.redisService.withResourceLock(auctionId, async () => {
+      const biddings =
+        await this.helperService.findBiddingsOfAuction(auctionId);
+      if (!biddings)
+        throw new NotFoundException(
+          `No bidings found for the auction ${auctionId}`,
+        );
+      return biddings;
+    });
   }
 
   @Cron(CronExpression.EVERY_MINUTE)

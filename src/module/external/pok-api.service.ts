@@ -54,7 +54,6 @@ export class PokApiService {
         { headers: { 'Content-Type': 'application/json' } },
       );
       const tokenData = res.data.data;
-      console.log('Token Data authenticating: ', tokenData);
       this.accessToken = tokenData.accessToken;
       this.refreshToken = tokenData.refreshToken;
       const expiresInMs = parseInt(tokenData.expiresIn, 10);
@@ -189,7 +188,6 @@ export class PokApiService {
         amount: body.splitWith.amount,
       };
     }
-    console.log('Payload for capture: ', payload);
     const { data } = await this.httpService.axiosRef.post(url, payload, {
       headers: {
         Authorization: `Bearer ${this.accessToken}`,
@@ -203,7 +201,6 @@ export class PokApiService {
     transaction.status = TransactionStatus.SUCCESS;
     await this.transactionRepository.save(transaction);
     console.log('Transaction captured successfully:', data);
-    console.log('My Transaction data captured Successfully:', transaction);
     return data;
   }
 

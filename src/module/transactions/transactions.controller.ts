@@ -30,7 +30,6 @@ export class TransactionsController {
     },
     @CurrentLoggedInUser() user: any,
   ) {
-    console.log('User in /transactions: ', user);
     return this.transactionsService.create(payload);
   }
 

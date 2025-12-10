@@ -8,6 +8,7 @@ import { Bidding } from '../../entity/bidding.entity';
 import { ItemsModule } from 'src/module/items/items.module';
 import { SharedModule } from '../shared/shared.module';
 import { PokApiModule } from '../external/pok-api.module';
+import { RedisModule } from '../redis/redis.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { PokApiModule } from '../external/pok-api.module';
     ItemsModule,
     SharedModule,
     PokApiModule,
+    RedisModule,
   ],
   controllers: [AuctionsController],
   providers: [AuctionsService],

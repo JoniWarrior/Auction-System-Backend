@@ -19,10 +19,6 @@ export class AuditInterceptor implements NestInterceptor {
     const method = request.method;
     const url = request.url;
 
-    console.log(`Request by: ${user}: ${method} ${url} -- Started`);
-    console.log('Authorization Header:', request.headers.authorization);
-    console.log('Decoded User:', request.user);
-
     return next.handle().pipe(
       tap(() => {
         console.log(`Completed ${method} ${url} in ${Date.now() - now} ms`);

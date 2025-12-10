@@ -6,9 +6,15 @@ import { CardsController } from './cards.controller';
 import { HttpModule } from '@nestjs/axios';
 import { PokApiModule } from '../external/pok-api.module';
 import { User } from '../../entity/user.entity';
+import { RedisModule } from '../redis/redis.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Card, User]), HttpModule, PokApiModule],
+  imports: [
+    TypeOrmModule.forFeature([Card, User]),
+    HttpModule,
+    PokApiModule,
+    RedisModule,
+  ],
   controllers: [CardsController],
   providers: [CardsService],
   exports: [CardsService],

@@ -15,6 +15,7 @@ import { PokApiService } from '../external/pok-api.service';
 import { TransactionStatus } from '../../def/enums/transaction_status';
 import { Bidding } from '../../entity/bidding.entity';
 import { AuctionsService } from '../auctions/auctions.service';
+import { RedisService } from '../redis/redis.service';
 
 @Injectable()
 export class TransactionsService {
@@ -27,6 +28,7 @@ export class TransactionsService {
     private readonly configService: ConfigService,
     private readonly pokApiService: PokApiService,
     private readonly auctionService: AuctionsService,
+    private readonly redisService: RedisService,
   ) {
     this.merchantId = this.configService.get<string>('POK_MERCHANT_ID') ?? '';
   }
@@ -71,13 +73,13 @@ export class TransactionsService {
     auctionId: string;
   }): Promise<Transaction> {
     const auction = await this.auctionService.findOne(payload.auctionId);
+
     const transactionPayload: CreateTransactionDto = {
       amount: payload.amount,
       currencyCode: 'ALL',
       autoCapture: false,
-      description: `Biding for auction ${payload.auctionId} with value ${payload.amount}`,
+      description: `Bidding for auction ${payload.auctionId} with value ${payload.amount}`,
       merchantCustomReference: this.merchantId,
-      // webhookUrl: 'https://63bd926533f0.ngrok-free.app//webhook/transaction',
       webhookUrl: process.env.WEBHOOK_PROXY_URL,
       products: [
         {
@@ -88,19 +90,20 @@ export class TransactionsService {
       ],
     };
 
-    const transactionResponse =
-      await this.pokApiService.createTransaction(transactionPayload);
-    const myTransaction = await this.transactionsRepository.save({
-      sdkOrderId: transactionResponse?.data?.sdkOrder?.id,
-      status: TransactionStatus.ON_HOLD, // success after payment done
-      biddingId: null,
+    return this.redisService.withResourceLock(payload.auctionId, async () => {
+      const transactionResponse =
+        await this.pokApiService.createTransaction(transactionPayload);
+      const myTransaction = await this.transactionsRepository.save({
+        sdkOrderId: transactionResponse?.data?.sdkOrder?.id,
+        status: TransactionStatus.ON_HOLD,
+        biddingId: null,
+      });
+      return myTransaction;
     });
-    console.log('Transaction Saved my DB: ', myTransaction);
-    return myTransaction;
   }
 
   async updateAndCancelTransaction(
-    currentTransaction: string, // normal ID of the DB
+    currentTransaction: string,
     bidding: Bidding,
     previousTransaction?: string,
   ): Promise<any> {
@@ -129,18 +132,18 @@ export class TransactionsService {
     }
 
     // 2. Save new bidding relation to the current transaction & change status to success
-    const transaction = await this.transactionsRepository.findOne({
-      where: { id: currentTransaction },
+    return this.redisService.withResourceLock(currentTransaction, async () => {
+      const transaction = await this.transactionsRepository.findOne({
+        where: { id: currentTransaction },
+      });
+      if (!transaction)
+        throw new NotFoundException(
+          `Transaction with id ${currentTransaction} not found`,
+        );
+      transaction.bidding = bidding;
+      transaction.status = TransactionStatus.SUCCESS;
+      await this.transactionsRepository.save(transaction);
     });
-    console.log('Transaction before   update: ', transaction);
-    if (!transaction)
-      throw new NotFoundException(
-        `Transaction with id ${currentTransaction} not found`,
-      );
-    transaction.bidding = bidding;
-    transaction.status = TransactionStatus.SUCCESS;
-    await this.transactionsRepository.save(transaction);
-    console.log('Transaction after update: ', transaction);
   }
 
   async findAll(query: PaginationQuery, status?: string) {
