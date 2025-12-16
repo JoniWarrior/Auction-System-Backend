@@ -14,6 +14,7 @@ import { Transaction } from '../../entity/transaction.entity';
 import { TransactionsModule } from '../transactions/transactions.module';
 import { PokApiModule } from '../external/pok-api.module';
 import { EmailModule } from '../email/email.module';
+import { RedisModule } from '../redis/redis.module';
 
 @Module({
   imports: [
@@ -23,8 +24,8 @@ import { EmailModule } from '../email/email.module';
     NotificationsModule,
     SharedModule,
     AuctionsModule,
-    PokApiModule,
     EmailModule,
+    RedisModule,
   ],
   controllers: [BiddingsController],
   providers: [BiddingsService, BiddingsGateway],

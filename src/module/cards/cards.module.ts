@@ -9,12 +9,7 @@ import { User } from '../../entity/user.entity';
 import { RedisModule } from '../redis/redis.module';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([Card, User]),
-    HttpModule,
-    PokApiModule,
-    RedisModule,
-  ],
+  imports: [TypeOrmModule.forFeature([Card, User]), HttpModule, PokApiModule],
   controllers: [CardsController],
   providers: [CardsService],
   exports: [CardsService],

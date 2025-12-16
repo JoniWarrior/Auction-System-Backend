@@ -129,7 +129,6 @@ export class PokApiService {
           },
         });
 
-      console.log('Transaction retrieved successfully:', data);
       return data;
     } catch (err: any) {
       const message =
@@ -149,7 +148,6 @@ export class PokApiService {
         return { success: false, message: 'Missing sdkOrderId or status' };
       }
 
-      // Find transaction in MY DB
       const transaction = await this.transactionRepository.findOne({
         where: { sdkOrderId },
         relations: ['bidding'],
@@ -200,7 +198,6 @@ export class PokApiService {
       throw new NotFoundException(`Transaction ${sdkOrderId} not found`);
     transaction.status = TransactionStatus.SUCCESS;
     await this.transactionRepository.save(transaction);
-    console.log('Transaction captured successfully:', data);
     return data;
   }
 
@@ -228,7 +225,6 @@ export class PokApiService {
     transaction.status = TransactionStatus.CANCELLED;
     transaction.cancelledAt = new Date();
     await this.transactionRepository.save(transaction);
-    console.log('Previous Transaction cancelled successfully:', transaction);
 
     const { data } = await this.httpService.axiosRef.post(url, payload, {
       headers: { Authorization: `Bearer ${this.accessToken}` },
@@ -274,27 +270,6 @@ export class PokApiService {
       throw new Error(`3DS setup failed: ${data.message || 'Unknown error'}`);
     }
   }
-  // Response from doc :
-  // {
-  //   "statusCode": 200,
-  //   "serverStatusCode": 200,
-  //   "data": {
-  //     "payerAuthentication": {
-  //       "deviceDataCollection": {
-  //         "accessToken": "{{accessToken}}",
-  //         "url": "{{dataCollectionUrl}}"
-  //       },
-  //       "creditDebitCard": {
-  //         "id": "{{creditDebitCardId}}"
-  //       },
-  //       "payerAuthSetupReferenceId": "{{payerAuthSetupReferenceId}}"
-  //     }
-  //   },
-  //   "message": "Success",
-  //   "requestId": "1680871146932:adn20.icc-al.org:31689:lg6j3bs5:10001",
-  //   "errors": []
-  // }
-
   public async tokenizeGuestCard(dto: TokenizeCardDto) {
     await this.ensureValidToken();
     const payload = {
@@ -340,26 +315,6 @@ export class PokApiService {
       );
     }
   }
-
-  // {
-  //   "statusCode": 200,
-  //   "serverStatusCode": 200,
-  //   "data": {
-  //     "payerAuthenticationEnrollment": {
-  //       "status": "PENDING_AUTHENTICATION",
-  //       "stepUp": {
-  //         "accessToken": "{{acessToken}}",
-  //         "url": "{{stepUpUrl}}"
-  //       },
-  //       "MD": "{{creditDebitCardId}}"
-  //     }
-  //   },
-  //   "message": "Success",
-  //   "requestId": "1680873256167:adn20.icc-al.org:31689:lg6j3bs5:10002",
-  //   "errors": []
-  // }
-
-  // {{baseUrl}}/sdk-orders/{{sdkOrderId}}/guest-confirm
   public async guestConfirm(
     sdkOrderId: string,
     creditCardId: string,

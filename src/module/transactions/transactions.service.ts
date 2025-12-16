@@ -118,7 +118,7 @@ export class TransactionsService {
     );
 
     if (previousTransaction) {
-      const cancellationReason = `Outbid by ${bidding.bidder.name} with value ${bidding.amount} for auction ${bidding.auction.id}`;
+      const cancellationReason = `Outbid by ${bidding.bidder?.name} with value ${bidding?.amount} for auction ${bidding?.auction?.id}`;
       try {
         await this.pokApiService.cancelTransaction(
           this.merchantId,
@@ -131,7 +131,7 @@ export class TransactionsService {
       }
     }
 
-    // 2. Save new bidding relation to the current transaction & change status to success
+    // 2. Save new bid relation to the current transaction, change status to success
     return this.redisService.withResourceLock(currentTransaction, async () => {
       const transaction = await this.transactionsRepository.findOne({
         where: { id: currentTransaction },

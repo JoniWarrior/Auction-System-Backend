@@ -12,11 +12,11 @@ import { ILike, Repository } from 'typeorm';
 import { BiddingsGateway } from './biddings-gateway';
 import { AuctionBiddingHelperService } from '../shared/auction-bidding-helper.service';
 import { PaginationQuery } from 'src/def/pagination-query';
-import { PokApiService } from '../external/pok-api.service';
-import { Transaction } from '../../entity/transaction.entity';
 import { ConfigService } from '@nestjs/config';
 import { EmailService } from '../email/email.service';
 import { UsersService } from '../users/users.service';
+import { RedisService } from '../redis/redis.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class BiddingsService {
@@ -25,96 +25,99 @@ export class BiddingsService {
     @InjectRepository(Bidding)
     private biddingsRepository: Repository<Bidding>,
 
-    @InjectRepository(Transaction)
-    private transactionsRepository: Repository<Transaction>,
-
     @Inject()
     private readonly biddingsGateway: BiddingsGateway,
     private readonly helperService: AuctionBiddingHelperService,
-    private readonly pokApiService: PokApiService,
     private readonly configService: ConfigService,
     private readonly emailService: EmailService,
     private readonly userService: UsersService,
+    private readonly redisService: RedisService,
   ) {
     this.merchantId = this.configService.get<string>('POK_MERCHANT_ID') ?? '';
   }
 
   async create(createBidding: CreateBidding, bidderId: string): Promise<any> {
-    // 1. Take auctionId and amount from frontend
     const { auctionId, amount } = createBidding;
 
-    // 2. Validate auction and bidder
-    const auction = await this.helperService.validateAuctionForBidding(
-      auctionId,
-      bidderId,
-    );
-    const bidder = await this.userService.findOne(bidderId);
+    let result: {
+      bidding: Bidding;
+      previousTransaction: string | null;
+      previousBidderEmail: string | null;
+      previousBidderId: string | null;
+      auctionId: string;
+    };
 
-    if (!bidder) {
-      throw new NotFoundException(
-        `User (bidder) with ID ${bidderId} not found`,
+    // 1. Check auction price, stauts
+    result = await this.redisService.withResourceLock(auctionId, async () => {
+      const auction = await this.helperService.validateAuctionForBidding(
+        auctionId,
+        bidderId,
       );
-    }
-    const currentHighestBid = await this.helperService.getHighestBid(auction);
-    const highestAmount = currentHighestBid?.amount;
+      const bidder = await this.userService.findOne(bidderId);
+      if (!bidder) throw new NotFoundException('Bidder not found');
+      const currentHighestBid = await this.helperService.getHighestBid(auction);
 
-    if (highestAmount && currentHighestBid?.bidder.id === bidderId) {
-      throw new Error('You already have the highest bidding amount!');
-    }
+      if (currentHighestBid?.bidder.id === bidderId) {
+        throw new Error('You already have the highest bid');
+      }
+      if (currentHighestBid && amount <= currentHighestBid.amount) {
+        throw new BadRequestException(
+          `Bid must be higher than ${currentHighestBid.amount}`,
+        );
+      }
 
-    if (highestAmount && amount <= highestAmount) {
-      throw new BadRequestException(
-        `Bid amount must be higher than $${highestAmount}`,
-      );
-    }
+      const previousTransaction =
+        currentHighestBid?.transaction?.sdkOrderId ?? null;
+      const previousBidderEmail = currentHighestBid?.bidder?.email ?? null;
 
-    let previousTransaction: string | null = null;
-    let previousBidderEmail: string | null = null;
-    if (currentHighestBid && currentHighestBid.bidder.id !== bidderId) {
-      previousTransaction = currentHighestBid?.transaction?.sdkOrderId;
-      previousBidderEmail = currentHighestBid?.bidder?.email;
-    }
-    // 3. Save bidding in DB
-    const { id } = await this.biddingsRepository.save({
-      amount,
-      auctionId,
-      bidderId,
-    });
-
-    // 4. Update auction currentPrice and status
-    const isFirstBid = (auction.biddings?.length ?? 0) === 0;
-    const updatedAuction = await this.helperService.updateAuction(auction, {
-      amount,
-      isFirstBid,
-    });
-
-    // 5. Broadcast events
-    const fullBid = await this.biddingsRepository.findOneOrFail({
-      where: { id },
-      relations: ['auction', 'bidder', 'transaction'],
-    });
-    console.log('Bid created: ', fullBid);
-    this.biddingsGateway.broadcastNewBid(updatedAuction.id, fullBid);
-
-    const pastBidders = auction.biddings
-      .map((b) => b.bidder.id)
-      .filter((id) => id !== bidderId);
-    const uniquePastBidders = [...new Set(pastBidders)];
-    console.time('broadcastOutBid');
-    await this.biddingsGateway.broadcastOutBid(
-      updatedAuction.id,
-      fullBid,
-      uniquePastBidders,
-    );
-    if (previousBidderEmail) {
-      await this.emailService.sendOutBidEmail(previousBidderEmail, {
-        auctionTitle: auction?.item?.title,
-        newBidAmount: amount,
+      // create the bid in db
+      const bid = await this.biddingsRepository.save({
+        amount,
+        auctionId,
+        bidderId,
       });
+
+      // if ok, update auction price and status
+      await this.helperService.updateAuction(auction, {
+        amount,
+        isFirstBid: !currentHighestBid,
+      });
+
+      const fullBid = await this.biddingsRepository.findOneOrFail({
+        where: { id: bid.id },
+        relations: ['auction', 'bidder', 'transaction', 'auction.item'],
+      });
+      const previousBidderId = currentHighestBid?.bidder?.id ?? null;
+      return {
+        bidding: fullBid,
+        previousTransaction,
+        previousBidderEmail,
+        previousBidderId,
+        auctionId,
+      };
+    });
+
+    // broadcast events with webSockte
+    this.biddingsGateway.broadcastNewBid(result.auctionId, result.bidding);
+
+    if (result.previousBidderId) {
+      await this.biddingsGateway.broadcastOutBid(
+        result.auctionId,
+        result.bidding,
+        [result.previousBidderId],
+      );
+
+      if (result.previousBidderEmail) {
+        await this.emailService.sendOutBidEmail(result.previousBidderEmail, {
+          auctionTitle: result.bidding.auction?.item?.title,
+          newBidAmount: amount,
+        });
+      }
     }
+
     return {
-      previousTransaction,
-      bidding: fullBid,
+      bidding: result.bidding,
+      previousTransaction: result.previousTransaction,
     };
   }
 

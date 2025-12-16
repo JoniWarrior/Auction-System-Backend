@@ -13,7 +13,6 @@ export class Card {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  // could add type (Visa / Mastercard)
   @Column()
   pokCardId: string;
 

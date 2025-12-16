@@ -91,7 +91,6 @@ export class BiddingsGateway
         auctionId,
         message,
       );
-
       if (socketId) {
         this.server.to(socketId).emit('outBid', notification);
       }
@@ -103,9 +102,7 @@ export class BiddingsGateway
     @MessageBody() data: { auctionId: string; userId: string },
     @ConnectedSocket() client: Socket,
   ) {
-    // take userIds from front and sent their respective names back
     const user = await this.usersService.findOne(data.userId);
-    console.log('From back to front: ', user?.name ?? 'Unknown User');
     client.to(`auction_${data.auctionId}`).emit('biddingIndicator', {
       userName: user?.name ?? 'Unknown User',
       isBidding: true,

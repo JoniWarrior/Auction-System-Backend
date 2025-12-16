@@ -4,19 +4,16 @@ export class DropPokMerchantIdFromUser1689654321001
   implements MigrationInterface
 {
   public async up(queryRunner: QueryRunner): Promise<void> {
-    // Drop the unique constraint first
     await queryRunner.query(
       `ALTER TABLE "user" DROP CONSTRAINT IF EXISTS "UQ_pokMerchantId"`,
     );
 
-    // Drop the column
     await queryRunner.query(
       `ALTER TABLE "user" DROP COLUMN IF EXISTS "pokMerchantId"`,
     );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    // Optional: recreate the column and constraint (not needed if you only want to drop)
     await queryRunner.query(
       `ALTER TABLE "user" ADD COLUMN "pokMerchantId" character varying`,
     );

@@ -191,16 +191,14 @@ export class AuctionsService {
   }
 
   async findOne(id: string): Promise<Auction> {
-    return this.redisService.withResourceLock(id, async () => {
-      const auction = await this.getAuction(id, [
-        'item',
-        'item.seller',
-        'biddings',
-        'biddings.bidder',
-        'winningBid',
-      ]);
-      return auction;
-    });
+    const auction = await this.getAuction(id, [
+      'item',
+      'item.seller',
+      'biddings',
+      'biddings.bidder',
+      'winningBid',
+    ]);
+    return auction;
   }
 
   async update(id: string, data: Partial<Auction>): Promise<Auction> {
@@ -220,16 +218,12 @@ export class AuctionsService {
   }
 
   async findBiddingsOfAuction(auctionId: string): Promise<Bidding[]> {
-    //  TODO : Remove later redisService usage
-    return this.redisService.withResourceLock(auctionId, async () => {
-      const biddings =
-        await this.helperService.findBiddingsOfAuction(auctionId);
-      if (!biddings)
-        throw new NotFoundException(
-          `No bidings found for the auction ${auctionId}`,
-        );
-      return biddings;
-    });
+    const biddings = await this.helperService.findBiddingsOfAuction(auctionId);
+    if (!biddings)
+      throw new NotFoundException(
+        `No bidings found for the auction ${auctionId}`,
+      );
+    return biddings;
   }
 
   @Cron(CronExpression.EVERY_MINUTE)
@@ -286,7 +280,6 @@ export class AuctionsService {
 
     if (winningBid) {
       auction.winningBid = winningBid;
-      // Capture money of winner
       if (winningBid?.transaction && winningBid?.transaction?.sdkOrderId) {
         const sdkOrderId = winningBid?.transaction?.sdkOrderId;
         console.log(sdkOrderId, 'Entereeeeeee');

@@ -4,10 +4,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Card } from '../../entity/card.entity';
 import { Repository } from 'typeorm';
 import { User } from '../../entity/user.entity';
-import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { PokApiService } from '../external/pok-api.service';
-import { RedisService } from '../redis/redis.service';
 
 @Injectable()
 export class CardsService {
@@ -18,31 +16,26 @@ export class CardsService {
 
     @InjectRepository(User)
     private usersRepository: Repository<User>,
-    private httpService: HttpService,
     private readonly configService: ConfigService,
 
     @Inject()
     private readonly pokApiService: PokApiService,
-    private readonly redisService: RedisService,
   ) {
     this.baseUrl = this.configService.get<string>('POK_STAGE_BASE_URL') ?? '';
   }
 
   async tokenizeGuestCard(userId: string, dto: TokenizeCardDto) {
     const tokenizedGuestCard = await this.pokApiService.tokenizeGuestCard(dto);
-    console.log('Card coming from POK Service: ', tokenizedGuestCard);
 
     const user = await this.usersRepository.findOne({ where: { id: userId } });
-    console.log('User coming from DB: ', user);
     if (!user) throw new NotFoundException(`User with id ${userId} not found`);
 
     const myDbSavedCard = await this.cardsRepository.save({
       pokCardId: tokenizedGuestCard.id,
       hiddenNumber: tokenizedGuestCard.hiddenNumber,
-      isDefault: false, // set to false at first (with radiobutton in front user can set default on his own)
+      isDefault: false,
       user,
     });
-    console.log('My DB Saved Card: ', myDbSavedCard);
   }
 
   async setupTokenized3DS(
@@ -50,24 +43,20 @@ export class CardsService {
     sdkOrderId: string,
     userId: string,
   ) {
-    // fetch the card from my db to get the creditDebitCardId / pokCardId
     const card = await this.cardsRepository.findOne({
       where: { id: mySavedCardId, user: { id: userId } },
     });
     if (!card)
       throw new NotFoundException(`Card with id ${mySavedCardId} not found!`);
     const creditDebitCardId = card.pokCardId;
-    console.log('Entering setUpTokenized with redis Service...');
-    console.log('My saved cardID: ', mySavedCardId);
-    return this.redisService.withResourceLock(mySavedCardId, async () => {
-      const data = await this.pokApiService.setupTokenized3DS(
-        creditDebitCardId,
-        sdkOrderId,
-      );
-      console.log('Setup Tokenized 3DS Response: ', data);
-      return data;
-    });
+    const data = await this.pokApiService.setupTokenized3DS(
+      creditDebitCardId,
+      sdkOrderId,
+    );
+    return data;
+    // });
   }
+
   // async checkCardExistence(
   //   cardNumber: string,
   //   clientId: string,
@@ -112,7 +101,7 @@ export class CardsService {
     },
   ) {
     const card = await this.cardsRepository.findOne({
-      where: { pokCardId: payload.creditDebitCardId, user: { id: userId } }, // id or pokCardId check ?
+      where: { pokCardId: payload.creditDebitCardId, user: { id: userId } },
     });
     if (!card)
       throw new NotFoundException(
@@ -141,7 +130,7 @@ export class CardsService {
     },
   ) {
     const card = await this.cardsRepository.findOne({
-      where: { pokCardId: payload.creditCardId, user: { id: userId } }, // pokCardId or id check ?
+      where: { pokCardId: payload.creditCardId, user: { id: userId } },
     });
     if (!card)
       throw new NotFoundException(
