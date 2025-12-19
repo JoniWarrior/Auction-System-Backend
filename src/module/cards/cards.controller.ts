@@ -78,6 +78,11 @@ export class CardsController {
     return this.cardsService.confirmPayment(userId, payload);
   }
 
+  @Post('/get-guest-card-info')
+  getGuestCardsInformation(@Body() body: { cardIds: string[] }) {
+    return this.cardsService.getGuestCardsInfo(body);
+  }
+
   @Get('/list-cards')
   listUserCards(@CurrentLoggedInUser('id') userId: string) {
     return this.cardsService.listUserCards(userId);

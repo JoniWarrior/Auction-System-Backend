@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Inject,
   Injectable,
   InternalServerErrorException,
@@ -68,38 +69,96 @@ export class TransactionsService {
     };
   }
 
+  // async create(payload: {
+  //   amount: number;
+  //   auctionId: string;
+  //   paymentCurrency: 'ALL' | 'EUR';
+  // }): Promise<Transaction> {
+  //   const auction = await this.auctionService.findOne(payload.auctionId);
+  //
+  //   if (!auction) {
+  //     throw new BadRequestException('Auction not found');
+  //   }
+  //
+  //   if (!['ALL', 'EUR'].includes(payload.paymentCurrency)) {
+  //     throw new BadRequestException('Unsupported currency');
+  //   }
+  //
+  //   const transactionPayload: CreateTransactionDto = {
+  //     amount: payload.amount,
+  //     currencyCode: payload.paymentCurrency,
+  //     autoCapture: false,
+  //     description: `Bidding for auction ${payload.auctionId}`,
+  //     merchantCustomReference: this.merchantId,
+  //     webhookUrl: process.env.WEBHOOK_PROXY_URL,
+  //     products: [
+  //       {
+  //         name: auction.item?.title,
+  //         quantity: 1,
+  //         price: payload.amount,
+  //       },
+  //     ],
+  //   };
+  //
+  //   const response =
+  //     await this.pokApiService.createTransaction(transactionPayload);
+  //   const sdkOrder = response.data.sdkOrder;
+  //
+  //   return this.transactionsRepository.save({
+  //     sdkOrderId: sdkOrder.id,
+  //     paymentCurrency: payload.paymentCurrency,
+  //     originalAmount: payload.amount,
+  //     finalAmount: sdkOrder.finalAmount, // ALL
+  //     appliedExchangeRate: sdkOrder.appliedExchangeRate,
+  //     status: TransactionStatus.ON_HOLD,
+  //   });
+  // }
+
   async create(payload: {
-    amount: any;
+    amount: number;
     auctionId: string;
+    paymentCurrency: 'ALL' | 'EUR';
   }): Promise<Transaction> {
     const auction = await this.auctionService.findOne(payload.auctionId);
 
+    if (!auction) {
+      throw new BadRequestException('Auction not found');
+    }
+
+    if (!['ALL', 'EUR'].includes(payload.paymentCurrency)) {
+      throw new BadRequestException('Unsupported currency');
+    }
+
     const transactionPayload: CreateTransactionDto = {
       amount: payload.amount,
-      currencyCode: 'ALL',
+      currencyCode: payload.paymentCurrency,
       autoCapture: false,
-      description: `Bidding for auction ${payload.auctionId} with value ${payload.amount}`,
+      description: `Bidding for auction ${payload.auctionId}`,
       merchantCustomReference: this.merchantId,
       webhookUrl: process.env.WEBHOOK_PROXY_URL,
       products: [
         {
-          name: auction?.item?.title,
+          name: auction.item?.title || 'Auction Item',
           quantity: 1,
           price: payload.amount,
         },
       ],
     };
 
-    return this.redisService.withResourceLock(payload.auctionId, async () => {
-      const transactionResponse =
-        await this.pokApiService.createTransaction(transactionPayload);
-      const myTransaction = await this.transactionsRepository.save({
-        sdkOrderId: transactionResponse?.data?.sdkOrder?.id,
-        status: TransactionStatus.ON_HOLD,
-        biddingId: null,
-      });
-      return myTransaction;
+    const response =
+      await this.pokApiService.createTransaction(transactionPayload);
+    const sdkOrder = response.data.sdkOrder;
+
+    const transaction = this.transactionsRepository.create({
+      sdkOrderId: sdkOrder.id,
+      paymentCurrency: payload.paymentCurrency,
+      originalAmount: sdkOrder.originalAmount ?? payload.amount,
+      finalAmount: sdkOrder.finalAmount ?? payload.amount,
+      appliedExchangeRate: sdkOrder.appliedExchangeRate ?? 1,
+      status: TransactionStatus.ON_HOLD,
     });
+
+    return this.transactionsRepository.save(transaction);
   }
 
   async updateAndCancelTransaction(

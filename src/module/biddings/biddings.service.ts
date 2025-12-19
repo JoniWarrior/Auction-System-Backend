@@ -16,7 +16,7 @@ import { ConfigService } from '@nestjs/config';
 import { EmailService } from '../email/email.service';
 import { UsersService } from '../users/users.service';
 import { RedisService } from '../redis/redis.service';
-import { NotificationsService } from '../notifications/notifications.service';
+import { TransactionsService } from '../transactions/transactions.service';
 
 @Injectable()
 export class BiddingsService {
@@ -32,54 +32,59 @@ export class BiddingsService {
     private readonly emailService: EmailService,
     private readonly userService: UsersService,
     private readonly redisService: RedisService,
+    private readonly transactionsService: TransactionsService,
   ) {
     this.merchantId = this.configService.get<string>('POK_MERCHANT_ID') ?? '';
   }
 
   async create(createBidding: CreateBidding, bidderId: string): Promise<any> {
-    const { auctionId, amount } = createBidding;
-
+    const { auctionId, transactionId } = createBidding;
     let result: {
       bidding: Bidding;
       previousTransaction: string | null;
       previousBidderEmail: string | null;
       previousBidderId: string | null;
-      auctionId: string;
+      auctionId: string | null;
     };
-
-    // 1. Check auction price, stauts
     result = await this.redisService.withResourceLock(auctionId, async () => {
       const auction = await this.helperService.validateAuctionForBidding(
         auctionId,
         bidderId,
       );
+
       const bidder = await this.userService.findOne(bidderId);
       if (!bidder) throw new NotFoundException('Bidder not found');
+      const transaction = await this.transactionsService.findOne(transactionId);
       const currentHighestBid = await this.helperService.getHighestBid(auction);
 
       if (currentHighestBid?.bidder.id === bidderId) {
-        throw new Error('You already have the highest bid');
+        throw new BadRequestException('You already have the highest bid');
       }
-      if (currentHighestBid && amount <= currentHighestBid.amount) {
+      if (
+        currentHighestBid &&
+        transaction.finalAmount <= auction.currentPrice // compare in All currenyc from transaction
+      ) {
         throw new BadRequestException(
-          `Bid must be higher than ${currentHighestBid.amount}`,
+          `Bid must be higher than current highest bid`,
         );
       }
 
       const previousTransaction =
         currentHighestBid?.transaction?.sdkOrderId ?? null;
       const previousBidderEmail = currentHighestBid?.bidder?.email ?? null;
-
-      // create the bid in db
+      const previousBidderId = currentHighestBid?.bidder?.id ?? null;
       const bid = await this.biddingsRepository.save({
-        amount,
+        amount: transaction.originalAmount,
+        currency: transaction.paymentCurrency,
+        amountAll: transaction.finalAmount, // save only in ALL currency from transaction
         auctionId,
         bidderId,
+        transaction,
       });
 
-      // if ok, update auction price and status
+      // Update auction using always All
       await this.helperService.updateAuction(auction, {
-        amount,
+        amount: transaction.finalAmount,
         isFirstBid: !currentHighestBid,
       });
 
@@ -87,7 +92,6 @@ export class BiddingsService {
         where: { id: bid.id },
         relations: ['auction', 'bidder', 'transaction', 'auction.item'],
       });
-      const previousBidderId = currentHighestBid?.bidder?.id ?? null;
       return {
         bidding: fullBid,
         previousTransaction,
@@ -97,20 +101,18 @@ export class BiddingsService {
       };
     });
 
-    // broadcast events with webSockte
-    this.biddingsGateway.broadcastNewBid(result.auctionId, result.bidding);
+    // TODO broadcasts seperated method refactor
+    this.biddingsGateway.broadcastNewBid(auctionId, result.bidding);
 
     if (result.previousBidderId) {
-      await this.biddingsGateway.broadcastOutBid(
-        result.auctionId,
-        result.bidding,
-        [result.previousBidderId],
-      );
+      await this.biddingsGateway.broadcastOutBid(auctionId, result.bidding, [
+        result.previousBidderId,
+      ]);
 
       if (result.previousBidderEmail) {
         await this.emailService.sendOutBidEmail(result.previousBidderEmail, {
           auctionTitle: result.bidding.auction?.item?.title,
-          newBidAmount: amount,
+          newBidAmount: result.bidding.amount,
         });
       }
     }

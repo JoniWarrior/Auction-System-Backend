@@ -30,6 +30,8 @@ export class CardsService {
     const user = await this.usersRepository.findOne({ where: { id: userId } });
     if (!user) throw new NotFoundException(`User with id ${userId} not found`);
 
+    // should not be in tokenize function call ?
+    // save label not hiddenNumber
     const myDbSavedCard = await this.cardsRepository.save({
       pokCardId: tokenizedGuestCard.id,
       hiddenNumber: tokenizedGuestCard.hiddenNumber,
@@ -149,5 +151,9 @@ export class CardsService {
       where: { user: { id: userId } },
       order: { isDefault: 'DESC' },
     });
+  }
+
+  async getGuestCardsInfo(data: { cardIds: string[] }) {
+    return this.pokApiService.getGuestCardsInformation(data.cardIds);
   }
 }

@@ -42,10 +42,7 @@ export class CreateTransactionDto {
   amount?: number;
 
   @IsString()
-  @Matches(/^[A-Z]{3}$/, {
-    message: 'currencyCode must be a valid ISO 4217 code',
-  })
-  currencyCode: string;
+  currencyCode: string; // ALL / EUR
 
   @IsArray()
   @ValidateNested({ each: true })

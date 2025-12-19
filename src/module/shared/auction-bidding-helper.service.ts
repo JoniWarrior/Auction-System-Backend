@@ -78,6 +78,7 @@ export class AuctionBiddingHelperService {
     });
   }
   async getHighestBid(auction: Auction): Promise<Bidding | null> {
+    // exchange rate
     if (!auction?.id) return null;
     return this.biddingsRepository.findOne({
       where: { auctionId: auction.id },

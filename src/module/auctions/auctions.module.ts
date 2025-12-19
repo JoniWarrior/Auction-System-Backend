@@ -16,7 +16,6 @@ import { RedisModule } from '../redis/redis.module';
     ItemsModule,
     SharedModule,
     PokApiModule,
-    RedisModule,
   ],
   controllers: [AuctionsController],
   providers: [AuctionsService],

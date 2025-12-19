@@ -20,12 +20,12 @@ import { RedisModule } from '../redis/redis.module';
   imports: [
     TypeOrmModule.forFeature([Bidding, Auction, User, Transaction]),
     UsersModule,
-    TransactionsModule,
     NotificationsModule,
     SharedModule,
     AuctionsModule,
     EmailModule,
     RedisModule,
+    TransactionsModule,
   ],
   controllers: [BiddingsController],
   providers: [BiddingsService, BiddingsGateway],

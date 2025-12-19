@@ -34,7 +34,6 @@ export class AuctionsService {
     @Inject()
     private readonly pokApiService: PokApiService,
     private readonly configService: ConfigService,
-    private readonly redisService: RedisService,
   ) {
     this.merchantId = this.configService.get<string>('POK_MERCHANT_ID') ?? '';
   }
@@ -196,6 +195,7 @@ export class AuctionsService {
       'item.seller',
       'biddings',
       'biddings.bidder',
+      'biddings.transaction', // needed for front, but could not be too optiomal(could change)?
       'winningBid',
     ]);
     return auction;

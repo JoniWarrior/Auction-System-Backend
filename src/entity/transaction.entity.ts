@@ -1,10 +1,10 @@
 import {
-  Entity,
-  PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
+  Entity,
   JoinColumn,
   OneToOne,
+  PrimaryGeneratedColumn,
 } from 'typeorm';
 import { TransactionStatus } from '../def/enums/transaction_status';
 import { Bidding } from './bidding.entity';
@@ -32,4 +32,16 @@ export class Transaction {
   })
   @JoinColumn({ name: 'biddingId' })
   bidding: Bidding;
+
+  @Column() // add nullable later
+  paymentCurrency: string; // ALL / EUR from user choice in front
+
+  @Column({ type: 'decimal' }) // remove nullable : true later
+  originalAmount: number;
+
+  @Column({ type: 'decimal' })
+  finalAmount: number;
+
+  @Column({ type: 'decimal' })
+  appliedExchangeRate: number;
 }

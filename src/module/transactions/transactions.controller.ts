@@ -25,8 +25,9 @@ export class TransactionsController {
   create(
     @Body()
     payload: {
-      amount: any;
+      amount: number;
       auctionId: string;
+      paymentCurrency: 'ALL' | 'EUR';
     },
     @CurrentLoggedInUser() user: any,
   ) {

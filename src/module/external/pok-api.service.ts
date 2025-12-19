@@ -332,4 +332,26 @@ export class PokApiService {
     });
     return data.data.sdkOrder;
   }
+
+  // --data '{
+  //   "cardIds": [
+  //     "7c592ad9-54c5-4f64-a9c0-452f6d37a5a2",
+  //     "482080c0-bcd4-47de-8e7c-601f27b824a9"
+  //   ]
+  // }'
+
+  public async getGuestCardsInformation(cardIds: string[]): Promise<any> {
+    await this.ensureValidToken();
+    const url = `${this.baseUrl}/credit-debit-cards/get-guest-cards-information`;
+    const { data } = await this.httpService.axiosRef.post(
+      url,
+      { cardIds },
+      {
+        headers: {
+          Authorization: `Bearer ${this.accessToken}`,
+        },
+      },
+    );
+    return data.data.cards[0];
+  }
 }

@@ -42,7 +42,7 @@ export interface SdkOrder {
   expiresAt: Date;
   redirectUrl: string;
   failRedirectUrl: string;
-  paymentMethod: string; // ( rpay-credit / credit-debid-card)
+  paymentMethod: string;
   cardType: string;
   merchant: Merchant;
   _self: SelfLinks;
@@ -52,5 +52,5 @@ export interface SdkOrder {
   merchantCustomReference?: string;
   transactionId: string;
   sdkOrderPaymentFlows: [];
-  issuer: string; // employee who created the order
+  issuer: string;
 }

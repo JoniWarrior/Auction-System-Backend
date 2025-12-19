@@ -6,12 +6,12 @@ const users = [
   {
     email: 'joniashimi1@gmail.com',
     password: 'joni.pass10',
-    bidAmount: 106,
+    bidAmount: 108,
   },
   {
     email: 'card@gmail.com',
     password: 'card.pass10',
-    bidAmount: 106,
+    bidAmount: 108,
   },
 ];
 

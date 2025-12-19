@@ -1,12 +1,12 @@
 import {
-  Entity,
   Column,
-  PrimaryGeneratedColumn,
   CreateDateColumn,
-  ManyToOne,
-  JoinColumn,
   DeleteDateColumn,
+  Entity,
+  JoinColumn,
+  ManyToOne,
   OneToOne,
+  PrimaryGeneratedColumn,
 } from 'typeorm';
 import { Auction } from './auction.entity';
 import { User } from './user.entity';
@@ -40,6 +40,12 @@ export class Bidding {
     onDelete: 'CASCADE',
   })
   transaction: Transaction;
+
+  @Column({ type: 'decimal' })
+  amountAll: number;
+
+  @Column() // for now
+  currency: string;
 
   @CreateDateColumn()
   createdAt: Date;
