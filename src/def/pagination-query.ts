@@ -1,7 +1,7 @@
 export type PaginationQuery = {
   qs?: string;
-  page?: number;
-  pageSize?: number;
+  page: number;
+  pageSize: number;
 };
 
 export interface FindAuctionsOptions extends PaginationQuery {

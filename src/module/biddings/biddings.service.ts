@@ -17,6 +17,7 @@ import { EmailService } from '../email/email.service';
 import { UsersService } from '../users/users.service';
 import { RedisService } from '../redis/redis.service';
 import { TransactionsService } from '../transactions/transactions.service';
+import { Transaction } from '../../entity/transaction.entity';
 
 @Injectable()
 export class BiddingsService {
@@ -37,71 +38,14 @@ export class BiddingsService {
     this.merchantId = this.configService.get<string>('POK_MERCHANT_ID') ?? '';
   }
 
-  async create(createBidding: CreateBidding, bidderId: string): Promise<any> {
-    const { auctionId, transactionId } = createBidding;
-    let result: {
+  private async broadcastEvents(
+    auctionId: string,
+    result: {
       bidding: Bidding;
-      previousTransaction: string | null;
-      previousBidderEmail: string | null;
       previousBidderId: string | null;
-      auctionId: string | null;
-    };
-    result = await this.redisService.withResourceLock(auctionId, async () => {
-      const auction = await this.helperService.validateAuctionForBidding(
-        auctionId,
-        bidderId,
-      );
-
-      const bidder = await this.userService.findOne(bidderId);
-      if (!bidder) throw new NotFoundException('Bidder not found');
-      const transaction = await this.transactionsService.findOne(transactionId);
-      const currentHighestBid = await this.helperService.getHighestBid(auction);
-
-      if (currentHighestBid?.bidder.id === bidderId) {
-        throw new BadRequestException('You already have the highest bid');
-      }
-      if (
-        currentHighestBid &&
-        transaction.finalAmount <= auction.currentPrice // compare in All currenyc from transaction
-      ) {
-        throw new BadRequestException(
-          `Bid must be higher than current highest bid`,
-        );
-      }
-
-      const previousTransaction =
-        currentHighestBid?.transaction?.sdkOrderId ?? null;
-      const previousBidderEmail = currentHighestBid?.bidder?.email ?? null;
-      const previousBidderId = currentHighestBid?.bidder?.id ?? null;
-      const bid = await this.biddingsRepository.save({
-        amount: transaction.originalAmount,
-        currency: transaction.paymentCurrency,
-        amountAll: transaction.finalAmount, // save only in ALL currency from transaction
-        auctionId,
-        bidderId,
-        transaction,
-      });
-
-      // Update auction using always All
-      await this.helperService.updateAuction(auction, {
-        amount: transaction.finalAmount,
-        isFirstBid: !currentHighestBid,
-      });
-
-      const fullBid = await this.biddingsRepository.findOneOrFail({
-        where: { id: bid.id },
-        relations: ['auction', 'bidder', 'transaction', 'auction.item'],
-      });
-      return {
-        bidding: fullBid,
-        previousTransaction,
-        previousBidderEmail,
-        previousBidderId,
-        auctionId,
-      };
-    });
-
-    // TODO broadcasts seperated method refactor
+      previousBidderEmail: string | null;
+    },
+  ) {
     this.biddingsGateway.broadcastNewBid(auctionId, result.bidding);
 
     if (result.previousBidderId) {
@@ -116,6 +60,94 @@ export class BiddingsService {
         });
       }
     }
+  }
+
+  private async validateBidRules(
+    currentHighestBid: Bidding | null,
+    bidderId: string,
+    currentPrice: number,
+    bidAmount: number,
+  ) {
+    if (currentHighestBid?.bidder?.id === bidderId) {
+      throw new BadRequestException('You already have the highest bid');
+    }
+    if (currentHighestBid && bidAmount <= currentPrice) {
+      throw new BadRequestException(
+        'Bid must be higher than current highest bid',
+      );
+    }
+  }
+
+  private async saveBid(
+    transaction: Transaction,
+    auctionId: string,
+    bidderId: string,
+    relations: string[],
+  ) {
+    const bid = await this.biddingsRepository.save({
+      amount: transaction.finalAmount,
+      currency: transaction.paymentCurrency,
+      auctionId,
+      bidderId,
+      transaction,
+    });
+    return this.biddingsRepository.findOneOrFail({
+      where: { id: bid.id },
+      relations,
+    });
+  }
+
+  private async buildResult(
+    bidding: Bidding,
+    currentHighestBid: Bidding | null,
+    auctionId: string,
+  ) {
+    return {
+      bidding,
+      previousTransaction: currentHighestBid?.transaction?.sdkOrderId ?? null,
+      previousBidderEmail: currentHighestBid?.bidder?.email ?? null,
+      previousBidderId: currentHighestBid?.bidder?.id ?? null,
+      auctionId,
+    };
+  }
+
+  async create(createBidding: CreateBidding, bidderId: string): Promise<any> {
+    const { auctionId, transactionId } = createBidding;
+    const result = await this.redisService.withResourceLock(
+      auctionId,
+      async () => {
+        const auction = await this.helperService.validateAuctionForBidding(
+          auctionId,
+          bidderId,
+        );
+
+        const bidder = await this.userService.findOne(bidderId);
+        if (!bidder) throw new NotFoundException('Bidder not found');
+        const transaction =
+          await this.transactionsService.findOne(transactionId);
+        const currentHighestBid =
+          await this.helperService.getHighestBid(auction);
+
+        await this.validateBidRules(
+          currentHighestBid,
+          bidderId,
+          auction.currentPrice,
+          transaction.finalAmount,
+        );
+        const bid = await this.saveBid(transaction, auctionId, bidderId, [
+          'auction',
+          'bidder',
+          'transaction',
+          'auction.item',
+        ]);
+        await this.helperService.updateAuction(auction, {
+          amount: transaction.finalAmount,
+          isFirstBid: !currentHighestBid,
+        });
+        return await this.buildResult(bid, currentHighestBid, auctionId);
+      },
+    );
+    await this.broadcastEvents(auctionId, result);
 
     return {
       bidding: result.bidding,
@@ -128,7 +160,6 @@ export class BiddingsService {
       where: { bidder: { name: ILike(`%${qs}%`) } },
       relations: ['auction', 'bidder'],
       take: pageSize,
-      // @ts-ignore
       skip: (page - 1) * pageSize,
       order: { amount: 'ASC' },
     });

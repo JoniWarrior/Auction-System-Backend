@@ -77,8 +77,8 @@ export class AuctionBiddingHelperService {
       relations: ['item', 'biddings'],
     });
   }
+  // Not optimistic fetching;
   async getHighestBid(auction: Auction): Promise<Bidding | null> {
-    // exchange rate
     if (!auction?.id) return null;
     return this.biddingsRepository.findOne({
       where: { auctionId: auction.id },
@@ -86,4 +86,14 @@ export class AuctionBiddingHelperService {
       order: { amount: 'DESC' },
     });
   }
+
+  // async getHighestBidWithTransaction(auctionId: string): Promise<Bidding | null> {
+  //   return this.biddingsRepository
+  //     .createQueryBuilder('bidding')
+  //     .innerJoinAndSelect('bidding.transaction', 'transaction')
+  //     .where('bidding.auctionId = :auctionId', { auctionId })
+  //     .orderBy('bidding.amount', 'DESC')
+  //     .limit(1)
+  //     .getOne();
+  // }
 }

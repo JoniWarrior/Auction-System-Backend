@@ -171,4 +171,13 @@ export class AuctionsController {
   ) {
     return await this.auctionsService.closeAuction(auctionId, currentUserId);
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Post(':id/cancel')
+  async cancelAuction(
+    @Param('id') auctionId: string,
+    @CurrentLoggedInUser('id') currentUserId: string,
+  ) {
+    return await this.auctionsService.cancelAuction(auctionId, currentUserId);
+  }
 }

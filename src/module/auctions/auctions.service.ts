@@ -20,7 +20,6 @@ import { User } from 'src/entity/user.entity';
 import { Item } from 'src/entity/item.entity';
 import { ConfigService } from '@nestjs/config';
 import { PokApiService } from '../external/pok-api.service';
-import { RedisService } from '../redis/redis.service';
 
 @Injectable()
 export class AuctionsService {
@@ -304,5 +303,33 @@ export class AuctionsService {
       winning_bid_amount: winningAmount,
       auction: savedAuction,
     };
+  }
+
+  async cancelAuction(auctionId: string, currentUserId: string) {
+    this.logger.log(`Cancelling auction: ${auctionId} ...`);
+    const auction = await this.getAuction(auctionId, [
+      'biddings',
+      'biddings.bidder',
+      'biddings.transaction',
+      'item',
+      'item.seller',
+    ]);
+    const highestBid = await this.helperService.getHighestBid(auction);
+    const sdkOrderId = highestBid?.transaction?.sdkOrderId;
+    console.log('SdkOrderId of transaction to be cancelled: ', sdkOrderId);
+    if (!sdkOrderId) throw new Error('No sdkOrderId found for auction');
+    // Just cancel the transaction of the current highest bid
+    try {
+      await this.pokApiService.cancelTransaction(
+        this.merchantId,
+        sdkOrderId,
+        'Auction Canceled with Immediate Effect',
+      );
+    } catch (err) {
+      console.error(err);
+    }
+    auction.status = AuctionStatus.FINISHED;
+    auction.endTime = moment().toDate();
+    return this.auctionsRepository.save(auction);
   }
 }

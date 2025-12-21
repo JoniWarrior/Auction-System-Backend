@@ -69,50 +69,48 @@ export class TransactionsService {
     };
   }
 
-  // async create(payload: {
-  //   amount: number;
-  //   auctionId: string;
-  //   paymentCurrency: 'ALL' | 'EUR';
-  // }): Promise<Transaction> {
-  //   const auction = await this.auctionService.findOne(payload.auctionId);
-  //
-  //   if (!auction) {
-  //     throw new BadRequestException('Auction not found');
-  //   }
-  //
-  //   if (!['ALL', 'EUR'].includes(payload.paymentCurrency)) {
-  //     throw new BadRequestException('Unsupported currency');
-  //   }
-  //
-  //   const transactionPayload: CreateTransactionDto = {
-  //     amount: payload.amount,
-  //     currencyCode: payload.paymentCurrency,
-  //     autoCapture: false,
-  //     description: `Bidding for auction ${payload.auctionId}`,
-  //     merchantCustomReference: this.merchantId,
-  //     webhookUrl: process.env.WEBHOOK_PROXY_URL,
-  //     products: [
-  //       {
-  //         name: auction.item?.title,
-  //         quantity: 1,
-  //         price: payload.amount,
-  //       },
-  //     ],
-  //   };
-  //
-  //   const response =
-  //     await this.pokApiService.createTransaction(transactionPayload);
-  //   const sdkOrder = response.data.sdkOrder;
-  //
-  //   return this.transactionsRepository.save({
-  //     sdkOrderId: sdkOrder.id,
-  //     paymentCurrency: payload.paymentCurrency,
-  //     originalAmount: payload.amount,
-  //     finalAmount: sdkOrder.finalAmount, // ALL
-  //     appliedExchangeRate: sdkOrder.appliedExchangeRate,
-  //     status: TransactionStatus.ON_HOLD,
-  //   });
-  // }
+  private async updatePreviousTransaction(
+    previousTransactionId: string,
+    bidding: Bidding,
+  ) {
+    if (previousTransactionId) {
+      const cancellationReason = `Outbid by ${bidding.bidder?.name} with value ${bidding?.amount} for auction ${bidding?.auction?.id}`;
+      try {
+        await this.pokApiService.cancelTransaction(
+          this.merchantId,
+          previousTransactionId, // sdkOrderId
+          cancellationReason,
+        );
+      } catch (err) {
+        console.error(err);
+        throw new InternalServerErrorException('Could not cancel transaction!');
+      }
+    }
+  }
+
+  private async updateCurrentTransaction(
+    currentTransactionId: string,
+    bidding: Bidding,
+  ) {
+    return this.redisService.withResourceLock(
+      currentTransactionId,
+      async () => {
+        const transaction = await this.getTransactionById(currentTransactionId);
+        transaction.bidding = bidding;
+        transaction.status = TransactionStatus.SUCCESS;
+        await this.transactionsRepository.save(transaction);
+      },
+    );
+  }
+
+  private async getTransactionById(id: string): Promise<Transaction> {
+    const transaction = await this.transactionsRepository.findOne({
+      where: { id },
+    });
+    if (!transaction)
+      throw new NotFoundException(`Transaction with id ${id} not found`);
+    return transaction;
+  }
 
   async create(payload: {
     amount: number;
@@ -148,61 +146,27 @@ export class TransactionsService {
     const response =
       await this.pokApiService.createTransaction(transactionPayload);
     const sdkOrder = response.data.sdkOrder;
-
     const transaction = this.transactionsRepository.create({
       sdkOrderId: sdkOrder.id,
       paymentCurrency: payload.paymentCurrency,
       originalAmount: sdkOrder.originalAmount ?? payload.amount,
-      finalAmount: sdkOrder.finalAmount ?? payload.amount,
+      finalAmount: sdkOrder.finalAmount, // store as POK returns
       appliedExchangeRate: sdkOrder.appliedExchangeRate ?? 1,
       status: TransactionStatus.ON_HOLD,
     });
-
     return this.transactionsRepository.save(transaction);
   }
 
   async updateAndCancelTransaction(
     currentTransaction: string,
     bidding: Bidding,
-    previousTransaction?: string,
+    previousTransaction: string,
   ): Promise<any> {
     // 1. Cancel previous transaction
-    console.log(
-      'Bidding coming from updateAndCancelTransaction method: ',
-      bidding,
-    );
-    console.log(
-      'Beginning to cancel previous transaction with sdkOrderId: ',
-      previousTransaction,
-    );
-
-    if (previousTransaction) {
-      const cancellationReason = `Outbid by ${bidding.bidder?.name} with value ${bidding?.amount} for auction ${bidding?.auction?.id}`;
-      try {
-        await this.pokApiService.cancelTransaction(
-          this.merchantId,
-          previousTransaction, // sdkOrderId
-          cancellationReason,
-        );
-      } catch (err) {
-        console.error(err);
-        throw new InternalServerErrorException('Could not cancel transaction!');
-      }
-    }
+    await this.updatePreviousTransaction(previousTransaction, bidding);
 
     // 2. Save new bid relation to the current transaction, change status to success
-    return this.redisService.withResourceLock(currentTransaction, async () => {
-      const transaction = await this.transactionsRepository.findOne({
-        where: { id: currentTransaction },
-      });
-      if (!transaction)
-        throw new NotFoundException(
-          `Transaction with id ${currentTransaction} not found`,
-        );
-      transaction.bidding = bidding;
-      transaction.status = TransactionStatus.SUCCESS;
-      await this.transactionsRepository.save(transaction);
-    });
+    await this.updateCurrentTransaction(currentTransaction, bidding);
   }
 
   async findAll(query: PaginationQuery, status?: string) {

@@ -41,9 +41,6 @@ export class Bidding {
   })
   transaction: Transaction;
 
-  @Column({ type: 'decimal' })
-  amountAll: number;
-
   @Column() // for now
   currency: string;
 

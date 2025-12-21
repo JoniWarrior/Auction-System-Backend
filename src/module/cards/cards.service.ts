@@ -6,6 +6,7 @@ import { Repository } from 'typeorm';
 import { User } from '../../entity/user.entity';
 import { ConfigService } from '@nestjs/config';
 import { PokApiService } from '../external/pok-api.service';
+import { UsersService } from '../users/users.service';
 
 @Injectable()
 export class CardsService {
@@ -14,11 +15,10 @@ export class CardsService {
     @InjectRepository(Card)
     private cardsRepository: Repository<Card>,
 
-    @InjectRepository(User)
-    private usersRepository: Repository<User>,
     private readonly configService: ConfigService,
 
     @Inject()
+    private usersService: UsersService,
     private readonly pokApiService: PokApiService,
   ) {
     this.baseUrl = this.configService.get<string>('POK_STAGE_BASE_URL') ?? '';
@@ -26,13 +26,8 @@ export class CardsService {
 
   async tokenizeGuestCard(userId: string, dto: TokenizeCardDto) {
     const tokenizedGuestCard = await this.pokApiService.tokenizeGuestCard(dto);
-
-    const user = await this.usersRepository.findOne({ where: { id: userId } });
-    if (!user) throw new NotFoundException(`User with id ${userId} not found`);
-
-    // should not be in tokenize function call ?
-    // save label not hiddenNumber
-    const myDbSavedCard = await this.cardsRepository.save({
+    const user = await this.usersService.getUser(userId);
+    await this.cardsRepository.save({
       pokCardId: tokenizedGuestCard.id,
       hiddenNumber: tokenizedGuestCard.hiddenNumber,
       isDefault: false,
@@ -56,7 +51,6 @@ export class CardsService {
       sdkOrderId,
     );
     return data;
-    // });
   }
 
   // async checkCardExistence(
