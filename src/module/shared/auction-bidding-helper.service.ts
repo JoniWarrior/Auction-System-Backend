@@ -78,16 +78,18 @@ export class AuctionBiddingHelperService {
     });
   }
   // Not optimistic fetching;
-  async getHighestBid(auction: Auction): Promise<Bidding | null> {
-    if (!auction?.id) return null;
+  async getHighestBid(auctionId: string): Promise<Bidding | null> {
+    if (!auctionId) return null;
     return this.biddingsRepository.findOne({
-      where: { auctionId: auction.id },
+      where: { auctionId },
       relations: ['transaction', 'bidder'],
       order: { amount: 'DESC' },
     });
   }
 
-  // async getHighestBidWithTransaction(auctionId: string): Promise<Bidding | null> {
+  // async getHighestBidWithTransaction(
+  //   auctionId: string,
+  // ): Promise<Bidding | null> {
   //   return this.biddingsRepository
   //     .createQueryBuilder('bidding')
   //     .innerJoinAndSelect('bidding.transaction', 'transaction')

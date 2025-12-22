@@ -126,7 +126,7 @@ export class BiddingsService {
         const transaction =
           await this.transactionsService.findOne(transactionId);
         const currentHighestBid =
-          await this.helperService.getHighestBid(auction);
+          await this.helperService.getHighestBid(auctionId);
 
         await this.validateBidRules(
           currentHighestBid,

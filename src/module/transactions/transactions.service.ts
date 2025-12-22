@@ -69,7 +69,7 @@ export class TransactionsService {
     };
   }
 
-  private async updatePreviousTransaction(
+  private async cancelPreviousTransaction(
     previousTransactionId: string,
     bidding: Bidding,
   ) {
@@ -163,7 +163,7 @@ export class TransactionsService {
     previousTransaction: string,
   ): Promise<any> {
     // 1. Cancel previous transaction
-    await this.updatePreviousTransaction(previousTransaction, bidding);
+    await this.cancelPreviousTransaction(previousTransaction, bidding);
 
     // 2. Save new bid relation to the current transaction, change status to success
     await this.updateCurrentTransaction(currentTransaction, bidding);

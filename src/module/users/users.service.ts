@@ -44,8 +44,8 @@ export class UsersService {
   }
 
   async getByEmailOrFail(email: string): Promise<User | null> {
-    const user = await this.usersRepository.findOne({where : {email}})
-    return user; 
+    const user = await this.usersRepository.findOne({ where: { email } });
+    return user;
   }
 
   async update(id: string, updateUser: UpdateUser): Promise<User> {
@@ -66,7 +66,6 @@ export class UsersService {
     return this.usersRepository.find({
       where: [{ email: ILike(`%${qs}%`) }, { name: ILike(`%${qs}%`) }],
       take: pageSize,
-      // @ts-ignore
       skip: (page - 1) * pageSize,
       order: { name: 'ASC' },
     });

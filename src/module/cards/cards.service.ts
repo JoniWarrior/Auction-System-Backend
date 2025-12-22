@@ -3,7 +3,6 @@ import { TokenizeCardDto } from '../../def/types/cards/createCard.type';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Card } from '../../entity/card.entity';
 import { Repository } from 'typeorm';
-import { User } from '../../entity/user.entity';
 import { ConfigService } from '@nestjs/config';
 import { PokApiService } from '../external/pok-api.service';
 import { UsersService } from '../users/users.service';
@@ -54,11 +53,11 @@ export class CardsService {
   }
 
   // async checkCardExistence(
-  //   cardNumber: string,
+  //   cardId: string,
   //   clientId: string,
   // ): Promise<boolean> {
   //   const card = await this.cardsRepository.findOne({
-  //     where: { cardNumber, user: { id: clientId } },
+  //     where: { pokCardId : cardId, user: { id: clientId } },
   //   });
   //   if (!card) {
   //     throw new NotFoundException(`You do not own any card with this number!`);

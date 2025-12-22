@@ -12,7 +12,6 @@ import { SharedModule } from '../shared/shared.module';
 import { AuctionsModule } from '../auctions/auctions.module';
 import { Transaction } from '../../entity/transaction.entity';
 import { TransactionsModule } from '../transactions/transactions.module';
-import { PokApiModule } from '../external/pok-api.module';
 import { EmailModule } from '../email/email.module';
 import { RedisModule } from '../redis/redis.module';
 

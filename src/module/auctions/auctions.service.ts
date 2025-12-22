@@ -55,7 +55,7 @@ export class AuctionsService {
     winner: User | null;
     winningAmount: number;
   }> {
-    const highestBid = await this.helperService.getHighestBid(auction);
+    const highestBid = await this.helperService.getHighestBid(auction?.id);
     const winningAmount = highestBid?.amount ?? auction.startingPrice;
     const winner = highestBid?.bidder ?? null; // User or null
 
@@ -119,6 +119,27 @@ export class AuctionsService {
         totalPages: Math.ceil(total / take),
       },
     };
+  }
+
+  private async captureWinnerTransaction(
+    winningBid: Bidding | null,
+    auction: Auction,
+  ) {
+    if (winningBid) {
+      auction.winningBid = winningBid;
+      if (winningBid?.transaction && winningBid?.transaction?.sdkOrderId) {
+        const sdkOrderId = winningBid?.transaction?.sdkOrderId;
+        try {
+          await this.pokApiService.capture(this.merchantId, sdkOrderId, {
+            amount: winningBid?.amount,
+          });
+        } catch (err) {
+          this.logger.error('Capturing winner: ', err);
+        }
+      }
+    } else {
+      this.logger.log(`Auction ${auction?.id} closed with no bids`);
+    }
   }
 
   async create(
@@ -189,15 +210,14 @@ export class AuctionsService {
   }
 
   async findOne(id: string): Promise<Auction> {
-    const auction = await this.getAuction(id, [
+    return await this.getAuction(id, [
       'item',
       'item.seller',
       'biddings',
       'biddings.bidder',
-      'biddings.transaction', // needed for front, but could not be too optiomal(could change)?
+      'biddings.transaction',
       'winningBid',
     ]);
-    return auction;
   }
 
   async update(id: string, data: Partial<Auction>): Promise<Auction> {
@@ -249,7 +269,7 @@ export class AuctionsService {
     currentUserId?: string,
   ): Promise<{
     winner: User | null;
-    winning_bid_amount: number;
+    winningBidAmount: number;
     auction: Auction;
   }> {
     this.logger.log(`Closing auction: ${auctionId} ...`);
@@ -276,23 +296,7 @@ export class AuctionsService {
     const { winningBid, winner, winningAmount } =
       await this.determineAuctionResult(auction);
     this.logger.log('Winning Bid: ', winningBid);
-
-    if (winningBid) {
-      auction.winningBid = winningBid;
-      if (winningBid?.transaction && winningBid?.transaction?.sdkOrderId) {
-        const sdkOrderId = winningBid?.transaction?.sdkOrderId;
-        console.log(sdkOrderId, 'Entereeeeeee');
-        try {
-          await this.pokApiService.capture(this.merchantId, sdkOrderId, {
-            amount: winningBid?.amount,
-          });
-        } catch (err) {
-          this.logger.error('Capturing winner: ', err);
-        }
-      }
-    } else {
-      this.logger.log(`Auction ${auctionId} closed with no bids`);
-    }
+    await this.captureWinnerTransaction(winningBid, auction);
 
     auction.status = AuctionStatus.FINISHED;
     auction.currentPrice = winningAmount;
@@ -300,7 +304,7 @@ export class AuctionsService {
 
     return {
       winner,
-      winning_bid_amount: winningAmount,
+      winningBidAmount: winningAmount,
       auction: savedAuction,
     };
   }
@@ -314,11 +318,15 @@ export class AuctionsService {
       'item',
       'item.seller',
     ]);
-    const highestBid = await this.helperService.getHighestBid(auction);
+    if (currentUserId !== auction?.item?.seller?.id)
+      throw new UnauthorizedException(
+        'Only the owner of the auction can cancel it!',
+      );
+    const highestBid = await this.helperService.getHighestBid(auctionId);
     const sdkOrderId = highestBid?.transaction?.sdkOrderId;
     console.log('SdkOrderId of transaction to be cancelled: ', sdkOrderId);
     if (!sdkOrderId) throw new Error('No sdkOrderId found for auction');
-    // Just cancel the transaction of the current highest bid
+    // cancel the transactoin of the current highest bid
     try {
       await this.pokApiService.cancelTransaction(
         this.merchantId,
@@ -326,7 +334,7 @@ export class AuctionsService {
         'Auction Canceled with Immediate Effect',
       );
     } catch (err) {
-      console.error(err);
+      console.error(err?.response);
     }
     auction.status = AuctionStatus.FINISHED;
     auction.endTime = moment().toDate();
